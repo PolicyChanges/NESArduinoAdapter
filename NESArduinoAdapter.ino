@@ -7,12 +7,16 @@ a+b = 50hz debouncing
 select+right = goofy foot controller
 select+down  = emulator friendly keyboard bindings
 select+start = loop function select -- testing purposes
+
+See Readme.md for more information
 */
 
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller
-//#define KEYBOARD
 
-#pragma GCC optimize("O2")
+
+#define KEYBOARD
+
+#pragma GCC optimize("O3")
 #pragma GCC push_options
 
 // Reference
@@ -47,6 +51,8 @@ void setupJoysticks()
 
 static u8 previousState = 0;
 static u8 updateState = 0;
+static uint8_t SELECT_START_A;
+static uint8_t SELECT_START_B;
 
 void readController(u8 &state) __attribute((always_inline));
 
@@ -77,11 +83,15 @@ enum XInputControl : uint8_t
   DPAD_DOWN = KEY_DOWN_ARROW,
   DPAD_LEFT = KEY_LEFT_ARROW,
   DPAD_RIGHT = KEY_RIGHT_ARROW,
-	BUTTON_X = KEY_W,
-	BUTTON_Y = KEY_S,
+	BUTTON_X = KEY_ESC,
+	BUTTON_Y = KEY_LEFT_CTRL, 
+  TRIGGER_LEFT,
+	TRIGGER_RIGHT, 
   JOY_LEFT,
 	JOY_RIGHT
 };
+
+#define KEY_1 0x31
 
 class Controller_ : public Keyboard_
 {
@@ -90,26 +100,31 @@ public:
   void setJoystick(XInputControl joy, boolean up, boolean down, boolean left, boolean right, boolean useSOCD=true) {
  
     if(joy == XInputControl::JOY_RIGHT) {
-      int i = 0;
       uint8_t dir[4] {DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT};
       bool states[4] {up, down, left, right};
-      for(bool dirState : states){
-        if(dirState)
+      for(int i = 0; i < 4; i++){
+        if(states[i]){
+          press(KEY_1);
           this->press(dir[i]);
-        else
-          this->release(dir[i]);
+        }
+        else{
+          release(KEY_1);
+          release(dir[i]);
+        }
       }
     } else if(joy == XInputControl::JOY_LEFT) {
       if(up)
-        this->press(BUTTON_X);
+        press(BUTTON_X);
       else
-        this->release(BUTTON_X);
+        release(BUTTON_X);
       if(down)
-        this->press(BUTTON_Y);
+        press(BUTTON_Y);
       else
-        this->release(BUTTON_Y);
+        release(BUTTON_Y);
     } 
   }
+  uint8_t SELECT_START_A = KEY_W;
+  uint8_t SELECT_START_B = KEY_S;
   String id = "Keyboard";
 };
 
@@ -119,6 +134,9 @@ Controller_ *Controller = dynamic_cast<Keyboard_*>(&Keyboard);
 class Controller_ : public XInputController
 {
 public:
+  SELECT_START_A = BUTTON_X;
+  SELECT_START_B = BUTTON_Y; 
+  
   String id = "XInput";
 };
 
@@ -192,45 +210,25 @@ static const u8 *buttonsMap = []() -> const u8*
   return xinputMapKeys;  
 }();
 
-
-static int getMask(int idxSquared)
-{
-  u8 idx = (u8)sqrt(idxSquared);
-  u8 button_val = xinputMapKeys[idx];
-
-  for(int i = 0; i < 8; i++) {
-    if(buttonsMap[i] == button_val)
-      return pow(2, (int)(i + 1));
-  }
-  return 0;
-}
-
-static const int A_MASK = getMask(NES_A);
-static const int B_MASK = getMask(NES_B);
-static const int S_MASK = getMask(NES_SELECT);
-static const int T_MASK = getMask(NES_START);
-static const int U_MASK = getMask(NES_UP);
-static const int D_MASK = getMask(NES_DOWN);
-static const int L_MASK = getMask(NES_LEFT);
-static const int R_MASK = getMask(NES_RIGHT);
-
+// in microseconds
 static const unsigned long debounce_interval = []() -> const unsigned long
 {
   u8 startupState = 0;
-  double video_mode = 0;
+  double video_freq = 0;
 
   // note: 4*4 + 4! + 8 - 1 = 47 potential startup mode combinations
   setupJoysticks();
   readController(startupState);
 
   if(startupState & (NES_A | NES_B))
-    video_mode = 50;
+    video_freq = 50;
   else
-    video_mode = 60;
+    video_freq = 60;
   
-  constexpr const double padding  = 8000; 
+  double padding  = 0; 
+  double num_of_frames = 1;
 
-  return (unsigned long)(((1 / video_mode) * 1000) * 2 * 1000) - padding;
+  return ((unsigned long)((1 / video_freq) * 1000) * num_of_frames * 1000) - padding;
 }();
 
 static struct buttonClamp
@@ -297,7 +295,7 @@ void setup()
 
 void processInput(const u8 currentStates, u8 &updateStates) __attribute((always_inline));
 void processInput(const u8 currentStates, u8 &updateStates) 
-{
+{ // TODO: catch it select is pressed and diabled releases
   const u8 changedStates = currentStates ^ previousState;
   const unsigned long processCurrentTime = micros();
   for (u8 i = 0; i < 8; i++) {
@@ -334,41 +332,28 @@ void updateInput(const u8 updateStates)
     }
 }
 
-
-
 void handleSelect(const u8 updateStates) __attribute((always_inline));
 void handleSelect(const u8 updateStates)
 {
   const u8 changedStates = updateStates ^ previousState;
 
-  Controller->setJoystick(XInputControl::JOY_RIGHT, updateStates & NES_UP, updateStates & NES_DOWN, 
-                          updateStates & NES_LEFT, updateStates & NES_RIGHT, false); // Emotes
-  
   if(updateStates & NES_START) { 
-    if(changedStates & NES_A) {
-      if(updateStates & NES_A)
-        Controller->press(XInputControl::BUTTON_Y); // Navigation buttons
+      if(updateStates & NES_A) 
+      Controller->press(SELECT_START_A); 
       else
-        Controller->release(XInputControl::BUTTON_Y);
-    }
-    if(changedStates & NES_B) {
+        Controller->release(SELECT_START_A);
+    
       if(updateStates & NES_B)
-        Controller->press(XInputControl::BUTTON_X); // Navigation buttons
+        Controller->press(SELECT_START_B); 
       else
-        Controller->release(XInputControl::BUTTON_X);
-    }
-    // handle keyboard escape pina
-    if(changedStates & NES_LEFT) {
-      if(updateStates & NES_LEFT)
-        Controller->press(KEY_ESC);
-      else 
-        Controller->release(KEY_ESC);
-    }
-
+        Controller->release(SELECT_START_B);
   }
 
-  if(!(updateStates & NES_START))
-    Controller->setJoystick(XInputControl::JOY_LEFT, updateStates & NES_B, updateStates & NES_A, false, false, false);  //  Move camera in/out
+  if(!(updateStates & NES_START)) {
+    Controller->setJoystick(XInputControl::JOY_LEFT, updateStates & NES_B, updateStates & NES_A, false, false, false);  // menu navigation 
+    Controller->setJoystick(XInputControl::JOY_RIGHT, updateStates & NES_UP, updateStates & NES_DOWN,                   // emotes             
+                            updateStates & NES_LEFT, updateStates & NES_RIGHT, false); 
+  }
 }
 
 #define UNBOUNDED_POLL
@@ -402,8 +387,6 @@ void loopBasicFunc()
   }
   currentTime = micros();
 }
-
-static bool isKeyboard = (Controller->id == "Keyboard");
 
 void loopTECFunc() 
 {
@@ -442,29 +425,31 @@ void loopTECFunc()
   currentTime = micros();
 }
 
-static uint_least64_t sum_of_difference = 0;
-static uint_least64_t start = 0;
-static uint_least64_t end = 0;
-static uint_least64_t n_samples = 0;
+
 
 void loop() 
 {
 
-  //start = (double)micros();
+#if 0
+static uint_least64_t sum_of_difference = 0;
+static uint_least64_t start = 0;
+static uint_least64_t end = 0;
+static uint_least64_t n_samples = 0;
+ // start = (double)micros();
+#endif
 
   loopMain();
-  
+
 #if 0
   end = (uint_least64_t)micros();
   uint_least64_t delta = end - start;
   sum_of_difference += delta;
   n_samples++;
   
-  if(sum_of_difference % (uint_least64_t)3000000 == 0) 
-    Serial.println(String("Average loop duration: ") + (double)sum_of_difference / (double)n_samples);
-
+  //if(sum_of_difference % (uint_least64_t)30 == 0) 
+  Serial.println(String("Average loop duration: ") + (double)sum_of_difference / (double)n_samples + String(" microseconds"));
 #endif
+
 }
 
 #pragma GCC pop_options
-

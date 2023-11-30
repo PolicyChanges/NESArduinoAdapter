@@ -1,8 +1,6 @@
 Arduino/Pro Micro sketch software that allows an nes controller to act as an HID keyboard or an XInput Xbox controller.</b>
 The keybord is easier but the xbox has some benefits.  Stick with keyboard if youre unsure.</b>
 
-If using keyboard, Tetris Effect player will want to know escape bind is press select and start then press left.</b>
-
 For using the pro micro/arduino as a HID keyboard:</b>
 
 Download the .ino file and upload it using the Arduino IDE.</b>
@@ -10,15 +8,17 @@ Download the .ino file and upload it using the Arduino IDE.</b>
 button to keyboard binds:</b>
 nes a = keyboard x</b>
 nes b = keyboard z</b>
-nes select	= unbinded(select + start + left = keyboard escape)</b>
+nes select	= unbinded(select + b = keyboard escape)</b>
 nes start 	= keyboard enter/return(keyboard r in emulator friendly startup mode)</b>
 nes up 		= keyboard up</b>
 nes down	= keyboard down</b>
 nes left	= keyboard left</b>
 nes right = keyboard right</b>
-nes select + nes b = keyboard w (move tetris effect camera in)</b>
-nes select + nes a = keyboard s (move tetris effect camera out)</b>
+nes select + nes start + nes b = keyboard w (zoom tetris effect camera in)</b>
+nes select + nes start + nes a = keyboard s (zoom tetris effect camera out)</b>
+nes select + nes a = fz1
 nes select + nes dpad = emotes on tetris effect</b>
+
 	
 For using the pro micro/arduino as an Xbox controller:</b>
 add to board manager</br>
