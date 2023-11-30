@@ -1,5 +1,5 @@
-Sketch can act as an keyboard or an xbox controller.</b>
-The keybord is easier and the xbox has some benefits.  Stick with keyboard if youre unsure.</b>
+Arduino/Pro Micro sketch software that allows an nes controller to act as an HID keyboard or an XInput Xbox controller.</b>
+The keybord is easier but the xbox has some benefits.  Stick with keyboard if youre unsure.</b>
 
 For using the pro micro/arduino as a HID keyboard:</b>
 
