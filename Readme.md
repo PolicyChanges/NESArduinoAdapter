@@ -5,18 +5,18 @@ For using the pro micro/arduino as a HID keyboard:</b>
 
 Download the .ino file and upload it using the Arduino IDE.</b>
 
-button to keyboard binds:</b>
-nes a = keyboard x</b>
-nes b = keyboard z</b>
-nes select	= unbinded(select + b = keyboard escape)</b>
-nes start 	= keyboard enter/return(keyboard r in emulator friendly startup mode)</b>
-nes up 		= keyboard up</b>
-nes down	= keyboard down</b>
-nes left	= keyboard left</b>
-nes right = keyboard right</b>
-nes select + nes start + nes a = keyboard s (zoom tetris effect camera out)</b>
-nes select + nes a = fz1
-nes select + nes dpad = emotes on tetris effect</b>
+button to keyboard binds:</b></b>
+nes a = keyboard x</b></b>
+nes b = keyboard z</b></b>
+nes select	= unbinded(select + b = keyboard escape)</b></b>
+nes start 	= keyboard enter/return(keyboard r in emulator friendly startup mode)</b></b>
+nes up 		= keyboard up</b></b>
+nes down	= keyboard down</b></b>
+nes left	= keyboard left</b></b>
+nes right = keyboard right</b></b>
+nes select + nes start + nes a = keyboard s (zoom tetris effect camera out)</b></b>
+nes select + nes a = fz1</b></b>
+nes select + nes dpad = emotes on tetris effect</b></b>
 
 	
 For using the pro micro/arduino as an Xbox controller:</b>
