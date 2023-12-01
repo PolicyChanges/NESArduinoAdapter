@@ -14,7 +14,7 @@ See Readme.md for more information
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller
 
 
-#define KEYBOARD
+//#define KEYBOARD
 
 #pragma GCC optimize("O3")
 #pragma GCC push_options
@@ -134,8 +134,8 @@ Controller_ *Controller = dynamic_cast<Keyboard_*>(&Keyboard);
 class Controller_ : public XInputController
 {
 public:
-  SELECT_START_A = BUTTON_X;
-  SELECT_START_B = BUTTON_Y; 
+  uint8_t SELECT_START_A = BUTTON_X;
+  uint8_t SELECT_START_B = BUTTON_Y; 
   
   String id = "XInput";
 };
@@ -295,7 +295,7 @@ void setup()
 
 void processInput(const u8 currentStates, u8 &updateStates) __attribute((always_inline));
 void processInput(const u8 currentStates, u8 &updateStates) 
-{ // TODO: catch it select is pressed and diabled releases
+{ // TODO: catch if select is pressed and diabled releases
   const u8 changedStates = currentStates ^ previousState;
   const unsigned long processCurrentTime = micros();
   for (u8 i = 0; i < 8; i++) {
@@ -329,7 +329,7 @@ void updateInput(const u8 updateStates)
         Controller->press(buttonsMap[i]); 
       else  
         Controller->release(buttonsMap[i]); 
-    }
+  }
 }
 
 void handleSelect(const u8 updateStates) __attribute((always_inline));
