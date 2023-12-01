@@ -51,7 +51,7 @@ Emulation Friendly Binds:</b>
 Hold buttons Select and Down while controller is being plugged in bind select and start buttons to q and r, respectively. </b>
 
 Goofy Foot:</b>
-Hole buttons A and B on the controller while plugging in to switch from 60hz ntsc to 50hz pal debouncing.</b>
+Hold buttons A and B on the controller while plugging in to switch from 60hz ntsc to 50hz pal debouncing.</b>
 
 
 
