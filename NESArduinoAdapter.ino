@@ -55,9 +55,6 @@ void setupJoysticks()
 static u8 previousState = 0;
 static u8 updateState = 0;
 
-static uint8_t SELECT_START_A;
-static uint8_t SELECT_START_B;
-
 void readController(u8 &state) __attribute((always_inline));
 
 #ifdef USE_KEYBOARD
@@ -131,9 +128,15 @@ public:
         release(BUTTON_Y);
     } 
   }
-  uint8_t SELECT_START_A = KEY_W;
-  uint8_t SELECT_START_B = KEY_S;
-  String id = "Keyboard";
+  uint8_t getSelectStartA() {
+    return KEY_W;
+  }
+  uint8_t getSelectStartB() {
+    return KEY_S;
+  }
+  String getDeviceType() {
+    return "Keyboard";
+  }
 };
 
 Controller_ *controller = dynamic_cast<Keyboard_*>(&Keyboard); 
@@ -142,15 +145,20 @@ Controller_ *controller = dynamic_cast<Keyboard_*>(&Keyboard);
 class Controller_ : public XInputController
 {
 public:
-  uint8_t SELECT_START_A = BUTTON_X;
-  uint8_t SELECT_START_B = BUTTON_Y; 
-  
-  String id = "XInput";
+  uint8_t getSelectStartA() {
+    return XInputControl::BUTTON_Y;
+  }
+  uint8_t getSelectStartB() {
+    return XInputControl::BUTTON_X;
+  }
+  String GetDeviceType() {
+    return "XInput";
+  }
 };
 
-Controller_ *controller = dynamic_cast<XInputController*>(&XInput);
-
 uint8_t KEY_ESC = 0;
+
+Controller_ *controller = dynamic_cast<XInputController*>(&XInput);
 #endif
 
 static constexpr u8 xinputMapKeys[8] 
@@ -281,7 +289,7 @@ void loopBasicFunc();
 
 void setup() 
 {
-#define DEBUG_KEYBOARD
+//#define DEBUG_KEYBOARD
 #ifdef DEBUG_KEYBOARD
   Serial.begin(9600);
 #endif
@@ -347,14 +355,14 @@ void handleSelect(const u8 updateStates)
 
   if(updateStates & NES_START) { 
     if(updateStates & NES_A) 
-      controller->press(SELECT_START_A); 
+      controller->press(controller->getSelectStartA()); 
     else
-      controller->release(SELECT_START_A);
+      controller->release(controller->getSelectStartA());
   
     if(updateStates & NES_B)
-      controller->press(SELECT_START_B); 
+      controller->press(controller->getSelectStartB()); 
     else
-      controller->release(SELECT_START_B);
+      controller->release(controller->getSelectStartB());
   }
 
   if(!(updateStates & NES_START)) {
