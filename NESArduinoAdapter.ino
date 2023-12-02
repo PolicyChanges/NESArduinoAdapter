@@ -1,12 +1,11 @@
-//add to board manager
+   //add to board manager
 //https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_dmadison_xinput_index.json
 
 /* 
 Startup Modes:
-a+b = 50hz debouncing
-select+right = goofy foot controller
-select+down  = emulator friendly keyboard bindings
-select+start = loop function select -- testing purposes
+a = 50hz debouncing
+b = goofy foot controller
+select = emulator friendly keyboard bindings
 
 See Readme.md for more information
 */
@@ -14,7 +13,7 @@ See Readme.md for more information
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller
 
 
-//#define KEYBOARD
+//#define USE_KEYBOARD
 
 #pragma GCC optimize("O3")
 #pragma GCC push_options
@@ -28,6 +27,10 @@ See Readme.md for more information
 #define NES_DOWN    B00100000
 #define NES_LEFT    B01000000
 #define NES_RIGHT   B10000000
+
+#define PAL_DEBOUNCING  NES_A
+#define GOOFY           NES_B
+#define EMULATOR_BINDS  NES_SELECT
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
 constexpr const u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
@@ -43,20 +46,21 @@ void setupJoysticks()
   pinMode(DATA, INPUT_PULLUP);
 }
 
-#define latch_low digitalWrite(LATCH, LOW)
-#define latch_high digitalWrite(LATCH, HIGH)
-#define clock_low digitalWrite(CLOCK, LOW)
-#define clock_high digitalWrite(CLOCK, HIGH)
+#define latchLow digitalWrite(LATCH, LOW)
+#define latchHigh digitalWrite(LATCH, HIGH)
+#define clockLow digitalWrite(CLOCK, LOW)
+#define clockHigh digitalWrite(CLOCK, HIGH)
 #define wait delayMicroseconds(12)
 
 static u8 previousState = 0;
 static u8 updateState = 0;
+
 static uint8_t SELECT_START_A;
 static uint8_t SELECT_START_B;
 
 void readController(u8 &state) __attribute((always_inline));
 
-#ifdef KEYBOARD
+#ifdef USE_KEYBOARD
   #include <Keyboard.h>
 #else
   #include <XInput.h>
@@ -72,7 +76,7 @@ void readController(u8 &state) __attribute((always_inline));
 #define KEY_J 0x6A
 #define KEY_1 0x31
 
-#ifdef KEYBOARD
+#ifdef USE_KEYBOARD
 
 enum XInputControl : uint8_t
 {
@@ -84,17 +88,17 @@ enum XInputControl : uint8_t
   DPAD_DOWN     = KEY_DOWN_ARROW,
   DPAD_LEFT     = KEY_LEFT_ARROW,
   DPAD_RIGHT    = KEY_RIGHT_ARROW,
-	BUTTON_X      = KEY_ESC,
-	BUTTON_Y      = KEY_LEFT_CTRL, 
+  BUTTON_X      = KEY_ESC,
+  BUTTON_Y      = KEY_LEFT_CTRL, 
 /*  BUTTON_LOGO = 0,
   BUTTON_LB = 5,
-	BUTTON_RB = 6,
+  BUTTON_RB = 6,
   BUTTON_L3 = 9,
-	BUTTON_R3 = 10,
+  BUTTON_R3 = 10,
   TRIGGER_LEFT = 15,
-	TRIGGER_RIGHT = 16,*/
+  TRIGGER_RIGHT = 16,*/
   JOY_LEFT,
-	JOY_RIGHT
+  JOY_RIGHT
 };
 
 class Controller_ : public Keyboard_
@@ -132,7 +136,7 @@ public:
   String id = "Keyboard";
 };
 
-Controller_ *Controller = dynamic_cast<Keyboard_*>(&Keyboard); 
+Controller_ *controller = dynamic_cast<Keyboard_*>(&Keyboard); 
 
 #else
 class Controller_ : public XInputController
@@ -144,7 +148,7 @@ public:
   String id = "XInput";
 };
 
-Controller_ *Controller = dynamic_cast<XInputController*>(&XInput);
+Controller_ *controller = dynamic_cast<XInputController*>(&XInput);
 
 uint8_t KEY_ESC = 0;
 #endif
@@ -187,15 +191,15 @@ static constexpr u8 emuMapButtons[8]
 
 static const bool isEmuFriendlyBinds = []() -> const bool
 {
-    u8 startupState = 0;
+  u8 startupState = 0;
 
-    setupJoysticks();
-    readController(startupState);
+  setupJoysticks();
+  readController(startupState);
 
-    if(startupState & (NES_START | NES_DOWN))
-      return true;
+  if(startupState & EMULATOR_BINDS)
+    return true;
 
-    return false;  
+  return false;  
 }();
 
 static const u8 *buttonsMap = []() -> const u8*
@@ -208,31 +212,31 @@ static const u8 *buttonsMap = []() -> const u8*
   setupJoysticks();
   readController(startupState);
 
-  if(startupState & (NES_SELECT | NES_RIGHT))
+  if(startupState & GOOFY)
     return goofyMapButtons;
 
   return xinputMapKeys;  
 }();
 
 // in microseconds
-static const unsigned long debounce_interval = []() -> const unsigned long
+static const unsigned long debounceInterval = []() -> const unsigned long
 {
   u8 startupState = 0;
-  double video_freq = 0;
+  double videoFreq = 0;
 
   // note: 4*4 + 4! + 8 - 1 = 47 potential startup mode combinations
   setupJoysticks();
   readController(startupState);
 
-  if(startupState & (NES_A | NES_B))
-    video_freq = 50;
+  if(startupState & PAL_DEBOUNCING)
+    videoFreq = 50;
   else
-    video_freq = 60;
+    videoFreq = 60;
   
   double padding  = 0; 
-  double num_of_frames = 1;
+  double numOfFrames = 1;
 
-  return ((unsigned long)((1 / video_freq) * 1000) * num_of_frames * 1000) - padding;
+  return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000) - padding;
 }();
 
 static struct buttonClamp
@@ -243,8 +247,8 @@ static struct buttonClamp
   const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
   const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long clampDownInterval[8] { debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval };
-  const unsigned long clampUpInterval[8]   { debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval };
+  const unsigned long clampDownInterval[8] { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
+  const unsigned long clampUpInterval[8]   { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
 #endif
 
   unsigned long onDownStateTimeStamp[8];
@@ -256,17 +260,17 @@ static struct buttonClamp
 void readController(u8 &state) 
 {
   state = 0;
-  latch_low;
-  clock_low;
-  latch_high;
+  latchLow;
+  clockLow;
+  latchHigh;
   wait;
-  latch_low;
+  latchLow;
 
   for (u8 i = 0; i < 8; i++) {
     state |= (!digitalRead(DATA) << i);
-    clock_high;
+    clockHigh;
     wait;
-    clock_low;
+    clockLow;
     wait;
   }
 }
@@ -277,13 +281,13 @@ void loopBasicFunc();
 
 void setup() 
 {
-//#define DEBUG_KEYBOARD
+#define DEBUG_KEYBOARD
 #ifdef DEBUG_KEYBOARD
   Serial.begin(9600);
 #endif
 
-  Controller->setAutoSend(true); 
-  Controller->begin();
+  controller->setAutoSend(true); 
+  controller->begin();
 
   for(u8 i = 0; i < 8; i++)
     clamp.onUpStateTimeStamp[i] = clamp.onDownStateTimeStamp[i] = micros();
@@ -330,9 +334,9 @@ void updateInput(const u8 updateStates)
   for (u8 i = 0; i < 8; i++) {
     if((changedStates >> i) & 0b00000001)
       if (((updateStates >> i) & 0b00000001))
-        Controller->press(buttonsMap[i]); 
+        controller->press(buttonsMap[i]); 
       else  
-        Controller->release(buttonsMap[i]); 
+        controller->release(buttonsMap[i]); 
   }
 }
 
@@ -342,27 +346,33 @@ void handleSelect(const u8 updateStates)
   const u8 changedStates = updateStates ^ previousState;
 
   if(updateStates & NES_START) { 
-      if(updateStates & NES_A) 
-        Controller->press(SELECT_START_A); 
-      else
-        Controller->release(SELECT_START_A);
-    
-      if(updateStates & NES_B)
-        Controller->press(SELECT_START_B); 
-      else
-        Controller->release(SELECT_START_B);
+    if(updateStates & NES_A) 
+      controller->press(SELECT_START_A); 
+    else
+      controller->release(SELECT_START_A);
+  
+    if(updateStates & NES_B)
+      controller->press(SELECT_START_B); 
+    else
+      controller->release(SELECT_START_B);
   }
 
   if(!(updateStates & NES_START)) {
-    Controller->setJoystick(XInputControl::JOY_LEFT, updateStates & NES_B, updateStates & NES_A, false, false, false);  // menu navigation 
-    Controller->setJoystick(XInputControl::JOY_RIGHT, updateStates & NES_UP, updateStates & NES_DOWN,                   // emotes             
+    controller->setJoystick(XInputControl::JOY_LEFT, updateStates & NES_B, updateStates & NES_A, false, false, false);  // menu navigation 
+    controller->setJoystick(XInputControl::JOY_RIGHT, updateStates & NES_UP, updateStates & NES_DOWN,                   // emotes             
                             updateStates & NES_LEFT, updateStates & NES_RIGHT, false); 
   }
 }
 
+
+// doing a usb trace, windows transers every 4ms, linux ~1ms
+#ifndef USE_KEYBOARD
 #define UNBOUNDED_POLL
 #ifdef UNBOUNDED_POLL
 static constexpr const unsigned long pollInterval =  0;     // microseconds
+#else
+static constexpr const unsigned long pollInterval =  2000;     // microseconds
+#endif
 #else
 static constexpr const unsigned long pollInterval =  2000;     // microseconds
 #endif
@@ -372,30 +382,30 @@ static unsigned long currentTime = micros();
 
 void loopBasicFunc()
 {
-    if (currentTime - previousTime > pollInterval) {
+  if (currentTime - previousTime > pollInterval) {
     
-    u8 currentState = 0;
+  u8 currentState = 0;
 
-    readController(currentState);
+  readController(currentState);
 
-    if(currentState != previousState) {
+  if(currentState != previousState) {
 
-      processInput(currentState, updateState);
+    processInput(currentState, updateState);
 
-      if(updateState != previousState) {
-          updateInput(updateState);
-          previousState = updateState;
-          previousTime = currentTime;
-      }
+    if(updateState != previousState) {
+      updateInput(updateState);
+      previousState = updateState;
+      previousTime = currentTime;
     }
   }
+}
   currentTime = micros();
 }
-
+bool button = true
+;
 void loopTECFunc() 
 {
   if (currentTime - previousTime > pollInterval) {
-    
     u8 currentState = 0;
 
     readController(currentState);
@@ -407,9 +417,9 @@ void loopTECFunc()
       if(updateState != previousState) {
         // Release select
         if((previousState & NES_SELECT) && (~updateState & NES_SELECT)) [[unlikely]] {
-          Controller->setJoystick(XInputControl::JOY_RIGHT, false, false, false, false, false);  // XInput library handles state breaking well. leave it.
-          Controller->setJoystick(XInputControl::JOY_LEFT, false, false, false, false, false);
-          Controller->releaseAll();
+          controller->setJoystick(XInputControl::JOY_RIGHT, false, false, false, false, false);  // XInput library handles state breaking well. leave it.
+          controller->setJoystick(XInputControl::JOY_LEFT, false, false, false, false, false);
+          controller->releaseAll();
 
           previousState = updateState = 0;
           memset((void*)(clamp.isPressed), 0, sizeof(bool) * 8);
@@ -427,6 +437,7 @@ void loopTECFunc()
     }
   }
   currentTime = micros();
+  button = !button;
 }
 
 void loop() 
