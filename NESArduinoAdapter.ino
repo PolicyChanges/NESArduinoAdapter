@@ -70,28 +70,32 @@ void readController(u8 &state) __attribute((always_inline));
 #define KEY_R 0x72
 #define KEY_I 0x69
 #define KEY_J 0x6A
+#define KEY_1 0x31
 
 #ifdef KEYBOARD
 
 enum XInputControl : uint8_t
 {
-  BUTTON_B = KEY_X,
-  BUTTON_A = KEY_Z,
-  BUTTON_BACK = KEY_LEFT_SHIFT,
-  BUTTON_START = KEY_RETURN,
-  DPAD_UP = KEY_UP_ARROW,
-  DPAD_DOWN = KEY_DOWN_ARROW,
-  DPAD_LEFT = KEY_LEFT_ARROW,
-  DPAD_RIGHT = KEY_RIGHT_ARROW,
-	BUTTON_X = KEY_ESC,
-	BUTTON_Y = KEY_LEFT_CTRL, 
-  TRIGGER_LEFT,
-	TRIGGER_RIGHT, 
+  BUTTON_B      = KEY_X,
+  BUTTON_A      = KEY_Z,
+  BUTTON_BACK   = KEY_LEFT_SHIFT,
+  BUTTON_START  = KEY_RETURN,
+  DPAD_UP       = KEY_UP_ARROW,
+  DPAD_DOWN     = KEY_DOWN_ARROW,
+  DPAD_LEFT     = KEY_LEFT_ARROW,
+  DPAD_RIGHT    = KEY_RIGHT_ARROW,
+	BUTTON_X      = KEY_ESC,
+	BUTTON_Y      = KEY_LEFT_CTRL, 
+/*  BUTTON_LOGO = 0,
+  BUTTON_LB = 5,
+	BUTTON_RB = 6,
+  BUTTON_L3 = 9,
+	BUTTON_R3 = 10,
+  TRIGGER_LEFT = 15,
+	TRIGGER_RIGHT = 16,*/
   JOY_LEFT,
 	JOY_RIGHT
 };
-
-#define KEY_1 0x31
 
 class Controller_ : public Keyboard_
 {
@@ -145,7 +149,7 @@ Controller_ *Controller = dynamic_cast<XInputController*>(&XInput);
 uint8_t KEY_ESC = 0;
 #endif
 
-constexpr u8 xinputMapKeys[8] 
+static constexpr u8 xinputMapKeys[8] 
 {
   BUTTON_B,
   BUTTON_A,
@@ -157,7 +161,7 @@ constexpr u8 xinputMapKeys[8]
   DPAD_RIGHT
 };
 
-constexpr u8 goofyMapButtons[8] 
+static constexpr u8 goofyMapButtons[8] 
 {
   BUTTON_A,
   BUTTON_B,
@@ -169,7 +173,7 @@ constexpr u8 goofyMapButtons[8]
   DPAD_LEFT
 };
 
-constexpr u8 emuMapButtons[8] 
+static constexpr u8 emuMapButtons[8] 
 {
   BUTTON_A,
   BUTTON_B,
@@ -236,8 +240,8 @@ static struct buttonClamp
 // In microseconds
 //#define NO_DEBOUNCE
 #ifdef NO_DEBOUNCE
-  static constexpr const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
-  static constexpr const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
+  const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
+  const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
   const unsigned long clampDownInterval[8] { debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval };
   const unsigned long clampUpInterval[8]   { debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval, debounce_interval };
@@ -339,7 +343,7 @@ void handleSelect(const u8 updateStates)
 
   if(updateStates & NES_START) { 
       if(updateStates & NES_A) 
-      Controller->press(SELECT_START_A); 
+        Controller->press(SELECT_START_A); 
       else
         Controller->release(SELECT_START_A);
     
@@ -424,8 +428,6 @@ void loopTECFunc()
   }
   currentTime = micros();
 }
-
-
 
 void loop() 
 {
