@@ -1,5 +1,6 @@
-   //add to board manager
+// for xinput support add to board manager
 //https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_dmadison_xinput_index.json
+// select AVR board with xinput
 
 /* 
 Startup Modes:
@@ -10,13 +11,15 @@ b = goofy foot controller
 start = emulator friendly keyboard bindings
 select + up,down,left,right = 1,2,4,8 ms controller polling respectively (0/constant polling is default)
   note: windows and linux only update controller's state to the program every 4ms
-See Readme.md for more information
+
+To program the microcontroller with the xinput bootloader, you must ground reset pin twice then select port when available.  Now that the port is selected, ground the reset pin 
+twice again, before pressing the upload button.  Once the Arudino IDE displays uploading in the bottom right, ground the pin twice once more, and the sketch will
+upload to the microcontroller.  Putting a button in between the pins makes this much easier.
 */
 
-// Comment out below and switch board to xinput(from url above) to act as an xbox controller
+// Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
 
-
-//#define USE_KEYBOARD
+#define USE_KEYBOARD
 
 #pragma GCC optimize("O3")
 #pragma GCC push_options
@@ -91,10 +94,10 @@ enum XInputControl : uint8_t
   DPAD_RIGHT    = KEY_RIGHT_ARROW,
   BUTTON_X      = KEY_ESC,
   BUTTON_Y      = KEY_LEFT_CTRL, 
-/*  BUTTON_LOGO = 0,
-  BUTTON_LB = 5,
-  BUTTON_RB = 6,
-  BUTTON_L3 = 9,
+  //BUTTON_LOGO = 0,
+  BUTTON_LB     = KEY_I,
+  BUTTON_RB     = KEY_J,
+ /* BUTTON_L3 = 9,
   BUTTON_R3 = 10,
   TRIGGER_LEFT = 15,
   TRIGGER_RIGHT = 16,*/
@@ -191,14 +194,14 @@ static constexpr u8 goofyMapButtons[8]
 
 static constexpr u8 emuMapButtons[8] 
 {
-  BUTTON_A,
   BUTTON_B,
-  KEY_I,
-  KEY_J,
-  DPAD_DOWN,
+  BUTTON_A,
+  BUTTON_LB,
+  BUTTON_RB,
   DPAD_UP,
-  DPAD_RIGHT,
-  DPAD_LEFT
+  DPAD_DOWN,
+  DPAD_LEFT,
+  DPAD_RIGHT
 };
 
 static const bool isEmuFriendlyBinds = []() -> const bool
