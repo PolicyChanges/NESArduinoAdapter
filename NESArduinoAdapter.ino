@@ -263,7 +263,7 @@ static const unsigned long pollInterval = []() -> const unsigned long
   readController(startupState);
 
   if(startupState | NES_SELECT)
-    return (startupState | POLL_RATE(startupState));
+    return (POLL_RATE(startupState) * 1000);
 
   return 0;
 }();
