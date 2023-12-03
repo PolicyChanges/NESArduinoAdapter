@@ -8,7 +8,8 @@ pressing these keys will set various modes and settings available to the control
 
 a = 50hz debouncing
 b = goofy foot controller
-start = emulator friendly keyboard bindings
+~~start = emulator friendly keyboard bindings~~
+start = tec mode
 select + up,down,left,right = 1,2,4,8 ms controller polling respectively (0/constant polling is default)
   note: windows and linux only update controller's state to the program every 4ms
 
@@ -36,7 +37,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 
 #define PAL_DEBOUNCING  NES_A
 #define GOOFY           NES_B
-#define EMULATOR_BINDS  NES_START
+#define TEC_MODE        NES_START
 #define POLL_RATE(x) (x >> 4)
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
@@ -211,10 +212,10 @@ static const bool isEmuFriendlyBinds = []() -> const bool
   setupJoysticks();
   readController(startupState);
 
-  if(startupState & EMULATOR_BINDS)
-    return true;
+  if(startupState & TEC_MODE)
+    return false;
 
-  return false;  
+  return true;  
 }();
 
 static const u8 *buttonsMap = []() -> const u8*
