@@ -400,25 +400,24 @@ void loopBasicFunc()
 {
   if (currentTime - previousTime > pollInterval) {
     
-  u8 currentState = 0;
+    u8 currentState = 0;
 
-  readController(currentState);
+    readController(currentState);
 
-  if(currentState != previousState) {
+    if(currentState != previousState) {
 
-    processInput(currentState, updateState);
+      processInput(currentState, updateState);
 
-    if(updateState != previousState) {
-      updateInput(updateState);
-      previousState = updateState;
-      previousTime = currentTime;
+      if(updateState != previousState) {
+        updateInput(updateState);
+        previousState = updateState;
+        previousTime = currentTime;
+      }
     }
   }
-}
   currentTime = micros();
 }
-bool button = true
-;
+
 void loopTECFunc() 
 {
   if (currentTime - previousTime > pollInterval) {
@@ -453,7 +452,6 @@ void loopTECFunc()
     }
   }
   currentTime = micros();
-  button = !button;
 }
 
 void loop() 
