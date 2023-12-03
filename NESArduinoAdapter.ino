@@ -3,10 +3,13 @@
 
 /* 
 Startup Modes:
+pressing these keys will set various modes and settings available to the controller.
+
 a = 50hz debouncing
 b = goofy foot controller
-select = emulator friendly keyboard bindings
-
+start = emulator friendly keyboard bindings
+select + up,down,left,right = 1,2,4,8 ms controller polling respectively (0/constant polling is default)
+  note: windows and linux only update controller's state to the program every 4ms
 See Readme.md for more information
 */
 
@@ -30,7 +33,8 @@ See Readme.md for more information
 
 #define PAL_DEBOUNCING  NES_A
 #define GOOFY           NES_B
-#define EMULATOR_BINDS  NES_SELECT
+#define EMULATOR_BINDS  NES_START
+#define POLL_RATE(x) (x >> 4)
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
 constexpr const u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
@@ -247,6 +251,19 @@ static const unsigned long debounceInterval = []() -> const unsigned long
   return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000) - padding;
 }();
 
+static const unsigned long pollInterval = []() -> const unsigned long
+{
+  u8 startupState = 0;
+
+  setupJoysticks();
+  readController(startupState);
+
+  if(startupState | NES_SELECT)
+    return (startupState | POLL_RATE(startupState));
+
+  return 0;
+}();
+
 static struct buttonClamp
 {
 // In microseconds
@@ -371,19 +388,6 @@ void handleSelect(const u8 updateStates)
                             updateStates & NES_LEFT, updateStates & NES_RIGHT, false); 
   }
 }
-
-
-// doing a usb trace, windows transers every 4ms, linux ~1ms
-#ifndef USE_KEYBOARD
-#define UNBOUNDED_POLL
-#ifdef UNBOUNDED_POLL
-static constexpr const unsigned long pollInterval =  0;     // microseconds
-#else
-static constexpr const unsigned long pollInterval =  2000;     // microseconds
-#endif
-#else
-static constexpr const unsigned long pollInterval =  2000;     // microseconds
-#endif
 
 static unsigned long previousTime = micros();
 static unsigned long currentTime = micros();
