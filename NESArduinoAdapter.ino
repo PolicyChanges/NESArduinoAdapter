@@ -1,7 +1,4 @@
-// for xinput support add to board manager
-// https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_dmadison_xinput_index.json
-// for teensy, sparkfun, etc may have to download extra board managers
-// select AVR board with xinput and appropriate processor
+
 
 /* 
 Startup Modes:
@@ -54,7 +51,15 @@ up                = up
 down              = down
 left              = left
 right             = right
+*/
 
+/*
+For xinput support add to board manager
+https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_dmadison_xinput_index.json
+for teensy, sparkfun, etc you may have to download extra board managers
+Select AVR board with xinput and appropriate processor
+Make sure to remove the "#define USE_KEYBOARD" line
+x
 To program the microcontroller with the xinput bootloader, you must ground reset pin twice then select port when available.  Now that the port is selected, ground the reset pin 
 twice again, before pressing the upload button.  Once the Arudino IDE displays uploading in the bottom right, ground the pin twice once more, and the sketch will
 upload to the microcontroller.  Putting a button in between the pins makes this much easier.
@@ -357,7 +362,7 @@ static const unsigned long pollInterval = []() -> const unsigned long
   if(startupState | NES_SELECT)
     return (POLL_RATE(startupState) * 1000);
 
-  return 0;
+  return 4000;
 }();
 
 static struct buttonClamp
