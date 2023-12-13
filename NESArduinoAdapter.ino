@@ -5,7 +5,7 @@ Startup Modes:
 pressing these keys while plugging in the controller usb will set various modes and settings.
 a = 50hz debouncing
 b = goofy foot controller
-start = eumlator friendly(non-tec) mode
+start = emulator friendly(non-tec) mode
 select + up,down,left,right = 1,2,4,8 ms controller polling respectively (0/constant polling is default)
 
 Default Keyboard Bindings:
