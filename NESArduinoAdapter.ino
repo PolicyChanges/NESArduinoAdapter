@@ -1,17 +1,59 @@
 // for xinput support add to board manager
-//https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_dmadison_xinput_index.json
-// select AVR board with xinput
+// https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_dmadison_xinput_index.json
+// for teensy, sparkfun, etc may have to download extra board managers
+// select AVR board with xinput and appropriate processor
 
 /* 
 Startup Modes:
-pressing these keys will set various modes and settings available to the controller.
-
+pressing these keys while plugging in the controller usb will set various modes and settings.
 a = 50hz debouncing
 b = goofy foot controller
-~~start = emulator friendly keyboard bindings~~
-start = tec mode
+start = eumlator friendly(non-tec) mode
 select + up,down,left,right = 1,2,4,8 ms controller polling respectively (0/constant polling is default)
-  note: windows and linux only update controller's state to the program every 4ms
+
+Default Keyboard Bindings:
+A                 = X
+B                 = Z
+start             = I
+select            = J
+up                = up
+down              = down
+left              = left
+right             = right
+
+TEC Mode Keyboard Bindings:
+A                 = X
+B                 = Z
+start             = enter/return
+select+B          = escape
+select+A          = ctrl/control
+select+A+B        = right shift/shift
+select+start+A    = W (zoom in)
+select+start+B    = Z (zoom out)
+select+start+A+B  = F1
+up                = up
+down              = down
+left              = left
+right             = right
+
+XInput/XBox Controller Default Bindings:
+default xbox controls
+
+Xinput/XBox Controller TEC Bindings:
+A                 = Button B
+B                 = Button A
+Start             = Start
+Select            = Back
+Select+A          = Right Stick Up (zoom in)
+Select+B          = Right Stick Down (zoom out)
+Select+A+B        = unused
+Select+Start+A    = Button X
+Select+Start+B    = Button Y
+Select+Start+A+B  = R3
+up                = up
+down              = down
+left              = left
+right             = right
 
 To program the microcontroller with the xinput bootloader, you must ground reset pin twice then select port when available.  Now that the port is selected, ground the reset pin 
 twice again, before pressing the upload button.  Once the Arudino IDE displays uploading in the bottom right, ground the pin twice once more, and the sketch will
@@ -21,6 +63,10 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
 
 #define USE_KEYBOARD
+
+#ifndef USE_KEYBOARD
+#define USE_XINPUT
+#endif
 
 #pragma GCC optimize("O3")
 #pragma GCC push_options
@@ -37,7 +83,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 
 #define PAL_DEBOUNCING  NES_A
 #define GOOFY           NES_B
-#define TEC_MODE        NES_START
+#define EMU_MODE        NES_START
 #define POLL_RATE(x) (x >> 4)
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
@@ -67,7 +113,8 @@ void readController(u8 &state) __attribute((always_inline));
 
 #ifdef USE_KEYBOARD
   #include <Keyboard.h>
-#else
+  #include <KeyboardLayout.h>
+#elif defined(USE_XINPUT)
   #include <XInput.h>
 #endif
 
@@ -80,6 +127,7 @@ void readController(u8 &state) __attribute((always_inline));
 #define KEY_I 0x69
 #define KEY_J 0x6A
 #define KEY_1 0x31
+#define VK_SHIFT 0x10
 
 #ifdef USE_KEYBOARD
 
@@ -87,19 +135,20 @@ enum XInputControl : uint8_t
 {
   BUTTON_B      = KEY_X,
   BUTTON_A      = KEY_Z,
-  BUTTON_BACK   = KEY_LEFT_SHIFT,
+  BUTTON_BACK   = 0x0,
   BUTTON_START  = KEY_RETURN,
   DPAD_UP       = KEY_UP_ARROW,
   DPAD_DOWN     = KEY_DOWN_ARROW,
   DPAD_LEFT     = KEY_LEFT_ARROW,
   DPAD_RIGHT    = KEY_RIGHT_ARROW,
   BUTTON_X      = KEY_ESC,
-  BUTTON_Y      = KEY_LEFT_CTRL, 
-  //BUTTON_LOGO = 0,
+  BUTTON_Y      = KEY_RIGHT_CTRL, 
+  //BUTTON_LOGO   = KEY_F1,
   BUTTON_LB     = KEY_I,
   BUTTON_RB     = KEY_J,
- /* BUTTON_L3 = 9,
-  BUTTON_R3 = 10,
+  BUTTON_R3     = KEY_RIGHT_SHIFT,
+ /* BUTTON_L3 = KEY_W,
+  BUTTON_R3 = KEY_S,
   TRIGGER_LEFT = 15,
   TRIGGER_RIGHT = 16,*/
   JOY_LEFT,
@@ -126,11 +175,18 @@ public:
         }
       }
     } else if(joy == XInputControl::JOY_LEFT) {
-      if(up)
+      // up is button b; down is button a
+      if(updateState & NES_B && updateState & NES_A)
+        press(BUTTON_R3);
+      else
+        release(BUTTON_R3);
+
+      if((previousState & NES_B) && !up)
         press(BUTTON_X);
       else
         release(BUTTON_X);
-      if(down)
+
+      if((previousState & NES_A) && !down)
         press(BUTTON_Y);
       else
         release(BUTTON_Y);
@@ -142,6 +198,28 @@ public:
   uint8_t getSelectStartB() {
     return KEY_S;
   }
+  uint8_t getSelectStartAB() {
+    return KEY_F1;
+  }
+    void handleSelectStart() {
+    if(updateState & NES_B && updateState & NES_A)
+      this->press(this->getSelectStartAB());
+    else
+      this->release(this->getSelectStartAB());
+
+    if (~updateState & NES_B){
+      if(updateState & NES_A)
+        this->press(this->getSelectStartA()); 
+      else if(!(updateState & NES_B))
+        this->release(this->getSelectStartA());
+    }
+    if(~updateState & NES_A) {
+      if(updateState & NES_B) 
+        this->press(this->getSelectStartB()); 
+      else if(!(updateState & NES_A))
+        this->release(this->getSelectStartB());
+    }
+  }
   String getDeviceType() {
     return "Keyboard";
   }
@@ -149,7 +227,7 @@ public:
 
 Controller_ *controller = dynamic_cast<Keyboard_*>(&Keyboard); 
 
-#else
+#elif defined(USE_XINPUT)
 class Controller_ : public XInputController
 {
 public:
@@ -158,6 +236,20 @@ public:
   }
   uint8_t getSelectStartB() {
     return XInputControl::BUTTON_X;
+  }
+  uint8_t getSelectStartAB() {
+    return XInputControl::BUTTON_R3;
+  }
+  void handleSelectStart() {
+    if(updateState & NES_A) 
+      this->press(this->getSelectStartA()); 
+    else
+      this->release(this->getSelectStartA());
+  
+    if(updateState & NES_B)
+      this->press(this->getSelectStartB()); 
+    else
+      this->release(this->getSelectStartB());
   }
   String GetDeviceType() {
     return "XInput";
@@ -212,10 +304,10 @@ static const bool isEmuFriendlyBinds = []() -> const bool
   setupJoysticks();
   readController(startupState);
 
-  if(startupState & TEC_MODE)
-    return false;
+  if(startupState & EMU_MODE)
+    return true;
 
-  return true;  
+  return false;  
 }();
 
 static const u8 *buttonsMap = []() -> const u8*
@@ -250,7 +342,7 @@ static const unsigned long debounceInterval = []() -> const unsigned long
     videoFreq = 60;
   
   double padding  = 0; 
-  double numOfFrames = 1;
+  double numOfFrames = 1.5;
 
   return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000) - padding;
 }();
@@ -276,7 +368,8 @@ static struct buttonClamp
   const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
   const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long clampDownInterval[8] { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
+  const unsigned long debounceIntervalDown = debounceInterval / 2; // don't want over shifting
+  const unsigned long clampDownInterval[8] { debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown };
   const unsigned long clampUpInterval[8]   { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
 #endif
 
@@ -372,20 +465,10 @@ void updateInput(const u8 updateStates)
 void handleSelect(const u8 updateStates) __attribute((always_inline));
 void handleSelect(const u8 updateStates)
 {
-  const u8 changedStates = updateStates ^ previousState;
-
-  if(updateStates & NES_START) { 
-    if(updateStates & NES_A) 
-      controller->press(controller->getSelectStartA()); 
-    else
-      controller->release(controller->getSelectStartA());
-  
-    if(updateStates & NES_B)
-      controller->press(controller->getSelectStartB()); 
-    else
-      controller->release(controller->getSelectStartB());
-  }
-
+  // TEC Menu Navigation
+  if(updateStates & NES_START)
+    controller->handleSelectStart();
+       
   if(!(updateStates & NES_START)) {
     controller->setJoystick(XInputControl::JOY_LEFT, updateStates & NES_B, updateStates & NES_A, false, false, false);  // menu navigation 
     controller->setJoystick(XInputControl::JOY_RIGHT, updateStates & NES_UP, updateStates & NES_DOWN,                   // emotes             
