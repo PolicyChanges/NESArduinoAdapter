@@ -6,9 +6,9 @@ pressing these keys while plugging in the controller usb will set various modes 
 a = 50hz debouncing
 b = goofy foot controller
 start = emulator friendly(non-tec) mode
-select + up,down,left,right = 1,2,4,8 ms controller polling respectively (0/constant polling is default)
+select + up,down,left,right = 1,2,4,8 ms controller polling respectively (2000 microsecond polling is default)
 
-Default Keyboard Bindings:
+Emulator Keyboard Bindings:
 A                 = X
 B                 = Z
 start             = I
@@ -59,7 +59,7 @@ https://raw.githubusercontent.com/dmadison/ArduinoXInput_Boards/master/package_d
 for teensy, sparkfun, etc you may have to download extra board managers
 Select AVR board with xinput and appropriate processor
 Make sure to remove the "#define USE_KEYBOARD" line
-x
+
 To program the microcontroller with the xinput bootloader, you must ground reset pin twice then select port when available.  Now that the port is selected, ground the reset pin 
 twice again, before pressing the upload button.  Once the Arudino IDE displays uploading in the bottom right, ground the pin twice once more, and the sketch will
 upload to the microcontroller.  Putting a button in between the pins makes this much easier.
@@ -373,7 +373,7 @@ static struct buttonClamp
   const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
   const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long debounceIntervalDown = debounceInterval / 2; // don't want over shifting
+  const unsigned long debounceIntervalDown = (debounceInterval / 2) - pollInterval; // don't want over shifting
   const unsigned long clampDownInterval[8] { debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown };
   const unsigned long clampUpInterval[8]   { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
 #endif
