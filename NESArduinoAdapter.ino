@@ -373,7 +373,7 @@ static struct buttonClamp
   const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
   const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long debounceIntervalDown = (debounceInterval / 2) - (pollInterval * 2); // reduce over shifting
+  const unsigned long debounceIntervalDown = min((debounceInterval / 2) - (pollInterval * 2), 4000); // reduce over shifting
   const unsigned long clampDownInterval[8] { debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown };
   const unsigned long clampUpInterval[8]   { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
 #endif
