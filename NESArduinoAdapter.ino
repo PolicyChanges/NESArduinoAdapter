@@ -67,7 +67,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
 
-//#define USE_KEYBOARD
+#define USE_KEYBOARD
 
 #ifndef USE_KEYBOARD
 #define USE_XINPUT
