@@ -347,7 +347,7 @@ static const unsigned long debounceInterval = []() -> const unsigned long
     videoFreq = 60;
   
   double padding  = 0; 
-  double numOfFrames = 1.5;
+  double numOfFrames = 1.7;
 
   return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000) - padding;
 }();
@@ -373,7 +373,7 @@ static struct buttonClamp
   const unsigned long clampDownInterval[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
   const unsigned long clampUpInterval[8]   { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long debounceIntervalDown = 2000; // reduce over shifting
+  const unsigned long debounceIntervalDown = 500; // reduce over shifting
   const unsigned long clampDownInterval[8] { debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown };
   const unsigned long clampUpInterval[8]   { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
 #endif
