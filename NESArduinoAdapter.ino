@@ -6,7 +6,7 @@ pressing these keys while plugging in the controller usb will set various modes 
 a = 50hz debouncing
 b = goofy foot controller
 start = emulator friendly(non-tec) mode
-select + up,down,left,right = 1,2,4,8 ms controller polling respectively (2000 microsecond polling is default)
+select + up,down,left,right = 1,2,4,8 ms controller polling respectively (4000 microsecond polling is default)
 
 Emulator Keyboard Bindings:
 A                 = X
@@ -67,7 +67,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
 
-#define USE_KEYBOARD
+//#define USE_KEYBOARD
 
 #ifndef USE_KEYBOARD
 #define USE_XINPUT
@@ -337,10 +337,9 @@ static const unsigned long debounceInterval = []() -> const unsigned long {
   else
     videoFreq = 60;
 
-  double padding = 0;
-  double numOfFrames = 1.8;
+  double numOfFrames = 1;
 
-  return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000) - padding;
+  return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000);
 }();
 
 static const unsigned long pollInterval = []() -> const unsigned long {
@@ -362,9 +361,9 @@ static struct buttonClamp {
   const unsigned long clampDownInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
   const unsigned long clampUpInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long debounceIntervalDown = 700;  // reduce over shifting
+  const unsigned long debounceIntervalDown = 2000;  // reduce over shifting
   const unsigned long clampDownInterval[8]{ debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown };
-  const unsigned long clampUpInterval[8]{ debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
+  const unsigned long clampUpInterval[8]  { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
 #endif
 
   unsigned long onDownStateTimeStamp[8];
