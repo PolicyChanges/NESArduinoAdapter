@@ -1,5 +1,3 @@
-
-
 /* 
 Startup Modes:
 pressing these keys while plugging in the controller usb will set various modes and settings.
@@ -37,7 +35,7 @@ XInput/XBox Controller Default Bindings:
 default xbox controls
 
 Xinput/XBox Controller TEC Bindings:
-A                 = Button B
+A                 = Button BX
 B                 = Button A
 Start             = Start
 Select            = Back
@@ -65,8 +63,16 @@ twice again, before pressing the upload button.  Once the Arudino IDE displays u
 upload to the microcontroller.  Putting a button in between the pins makes this much easier.
 */
 
-// Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
+/*
+Tips for improving TEC latency
+  -Turn off v-sync and in fullscreen mode
+  -Put settings to lowest(partical size to maximum), and increase until latency becomes problematic
+  -If using a multi-usb port, ensure other ports are empty
+  -Restart computer if misdrops get worse over time(or take a break)
+  -If using nvidia, enable in-game overlay in geforce experience app, open overlay, click performance, click gear, choose screen position, trying getting the render latnecy statstic low as possible
+*/
 
+// Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
 //#define USE_KEYBOARD
 
 #ifndef USE_KEYBOARD
@@ -296,6 +302,9 @@ static constexpr u8 emuMapButtons[8]{
   DPAD_RIGHT
 };
 
+//*********************************//
+//**** Variables set on plugin ****//
+//*********************************//
 static const bool isEmuFriendlyBinds = []() -> const bool {
   u8 startupState = 0;
 
@@ -324,7 +333,7 @@ static const u8 *buttonsMap = []() -> const u8 * {
 }();
 
 // in microseconds
-static const unsigned long debounceInterval = []() -> const unsigned long {
+static const unsigned long debounceIntervalPress = []() -> const unsigned long {
   u8 startupState = 0;
   double videoFreq = 0;
 
@@ -337,7 +346,7 @@ static const unsigned long debounceInterval = []() -> const unsigned long {
   else
     videoFreq = 60;
 
-  double numOfFrames = 1;
+  constexpr double numOfFrames = 1;
 
   return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000);
 }();
@@ -351,23 +360,25 @@ static const unsigned long pollInterval = []() -> const unsigned long {
   if (startupState | NES_SELECT)
     return (POLL_RATE(startupState) * 1000);
 
-  return 4000;
+  return 1000;
 }();
+//*********************************//
+
 
 static struct buttonClamp {
 // In microseconds
 //#define NO_DEBOUNCE
 #ifdef NO_DEBOUNCE
   const unsigned long clampDownInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
-  const unsigned long clampUpInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
+  const unsigned long clampUpInterval[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long debounceIntervalDown = 2000;  // reduce over shifting
-  const unsigned long clampDownInterval[8]{ debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown, debounceIntervalDown };
-  const unsigned long clampUpInterval[8]  { debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval, debounceInterval };
+  const unsigned long debounceIntervalRelease = 1000;  // reduce over shifting
+  const unsigned long clampPressInterval[8]    { debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease };
+  const unsigned long clampReleaseInterval[8]  { debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress };
 #endif
 
-  unsigned long onDownStateTimeStamp[8];
-  unsigned long onUpStateTimeStamp[8];
+  unsigned long onPressStateTimeStamp[8];
+  unsigned long onReleaseStateTimeStamp[8];
   bool isPressed[8]{ false, false, false, false, false, false, false, false };
 } clamp;
 
@@ -403,7 +414,7 @@ void setup() {
   controller->begin();
 
   for (u8 i = 0; i < 8; i++)
-    clamp.onUpStateTimeStamp[i] = clamp.onDownStateTimeStamp[i] = micros();
+    clamp.onReleaseStateTimeStamp[i] = clamp.onPressStateTimeStamp[i] = micros();
 
   u8 startupState = 0;
   readController(startupState);
@@ -414,22 +425,22 @@ void setup() {
     loopMain = &loopTECFunc;
 }
 
-void processInput(const u8 currentStates, u8 &updateStates) __attribute((always_inline));
-void processInput(const u8 currentStates, u8 &updateStates) {  // TODO: catch if select is pressed and diabled releases
-  const u8 changedStates = currentStates ^ previousState;
+void processInput(const u8 currentStates, u8 &processUpdateState) __attribute((always_inline));
+void processInput(const u8 processCurrentState, u8 &processUpdateState) {  // TODO: catch if select is pressed and diabled releases
+  const u8 changedState = processCurrentState ^ previousState;
   const unsigned long processCurrentTime = micros();
   for (u8 i = 0; i < 8; i++) {
-    if ((changedStates >> i) & 0b00000001) {
-      if ((currentStates >> i) & 0b00000001) {
-        if (!clamp.isPressed[i] && processCurrentTime - clamp.onUpStateTimeStamp[i] >= clamp.clampUpInterval[i]) {
-          updateStates |= (0b00000001 << i);
-          clamp.onDownStateTimeStamp[i] = processCurrentTime;
+    if ((changedState >> i) & 0b00000001) {
+      if ((processCurrentState >> i) & 0b00000001) {
+        if (!clamp.isPressed[i] && processCurrentTime - clamp.onReleaseStateTimeStamp[i] >= clamp.clampReleaseInterval[i]) {
+          processUpdateState |= (0b00000001 << i);
+          clamp.onPressStateTimeStamp[i] = processCurrentTime;
           clamp.isPressed[i] = true;
         }
       } else {
-        if (clamp.isPressed[i] && processCurrentTime - clamp.onDownStateTimeStamp[i] >= clamp.clampDownInterval[i]) {
-          updateStates &= 0b11111111 & ~(0b00000001 << i);
-          clamp.onUpStateTimeStamp[i] = processCurrentTime;
+        if (clamp.isPressed[i] && processCurrentTime - clamp.onPressStateTimeStamp[i] >= clamp.clampPressInterval[i]) {
+          processUpdateState &= 0b11111111 & ~(0b00000001 << i);
+          clamp.onReleaseStateTimeStamp[i] = processCurrentTime;
           clamp.isPressed[i] = false;
         }
       }
@@ -438,11 +449,11 @@ void processInput(const u8 currentStates, u8 &updateStates) {  // TODO: catch if
 }
 
 void updateInput(const u8 updateStates) __attribute((always_inline));
-void updateInput(const u8 updateStates) {
-  const u8 changedStates = updateStates ^ previousState;
+void updateInput(const u8 updateState) {
+  const u8 changedStates = updateState ^ previousState;
   for (u8 i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001)
-      if (((updateStates >> i) & 0b00000001))
+      if (((updateState >> i) & 0b00000001))
         controller->press(buttonsMap[i]);
       else
         controller->release(buttonsMap[i]);
