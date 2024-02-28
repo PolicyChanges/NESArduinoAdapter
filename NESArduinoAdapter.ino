@@ -71,14 +71,19 @@ Tips for improving TEC latency
   -Restart computer if misdrops get worse over time(or take a break)
   -If using nvidia on windows, enable in-game overlay in geforce experience app, open overlay, click performance, click gear, choose screen position, trying getting the render latnecy statstic low as possible
 
-For all one of me playing tec on linux:
-  -Nvidia-settings->PowerMizer->set preferred mode to prefer maximum performance and other settings to performance
+For all one of me playing TEC on linux:
+  -nvidia-settings->PowerMizer->set preferred mode to prefer maximum performance and other settings to performance
   -Disable x11 compositor.  e.g. with steam's launch options:
     "gsettings set org.mate.Marco.general compositing-manager false;  %command%; gsettings set org.mate.Marco.general compositing-manager true"
   -Use a light weight desktop. e.g. mate, xfce, et al
   -Install a low latency kernel
   -Install gamemode
     e.g. steam launch options: gamemoderun %command%
+
+For the diagnosible on Windows(not tested):
+  -Install AutoLogin
+  -Diable widgets
+  -Replace the windows shell with Steam(https://steamcommunity.com/groups/bigpicture/discussions/1/864958451556578063/)
 */
 
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
