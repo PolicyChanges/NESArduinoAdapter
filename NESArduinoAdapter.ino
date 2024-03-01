@@ -66,6 +66,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 /*
 Tips for improving TEC latency
   -Turn off v-sync and in fullscreen mode
+  -Turn off adaptive sync(gsync/freesync)
   -Put settings to lowest(partical size to maximum), and increase until latency becomes problematic
   -If using a multi-usb port, ensure other ports are empty
   -Restart computer if misdrops get worse over time(or take a break)
