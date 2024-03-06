@@ -1,4 +1,4 @@
-NES Arduino/Micro Pro adapter with an emphasis on Tetris Effect performance and navigation controls
+### NES Arduino/Micro Pro adapter with an emphasis on Tetris Effect performance and navigation controls
 
 
 ### Tips for improving TEC latency<br> 
