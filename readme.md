@@ -2,7 +2,7 @@ NES Arduino/Micro Pro adapter with an emphasis on Tetris Effect performance and 
 
 
 Tips for improving TEC latency
-  -Turn off v-sync and in fullscreen mode
+  -Turn off v-sync and in fu32screen mode
   -Turn off adaptive sync(gsync/freesync)
   -Put settings to lowest(partical size to maximum), and increase until latency becomes problematic
   -If using a multi-usb port, ensure other ports are empty

@@ -132,6 +132,7 @@ void readController(u8 &state) __attribute((always_inline));
 
 #ifdef USE_KEYBOARD
 
+// Keyboard inherets XInput properties
 enum XInputControl : uint8_t {
   BUTTON_B = KEY_X,
   BUTTON_A = KEY_Z,
@@ -155,6 +156,9 @@ enum XInputControl : uint8_t {
   JOY_RIGHT
 };
 
+//*********************************//
+//**** Controller Interface *******//
+//*********************************//
 class Controller_ : public Keyboard_ {
 public:
   void setAutoSend(bool send) {
@@ -259,7 +263,12 @@ uint8_t KEY_ESC = 0;
 
 Controller_ *controller = dynamic_cast<XInputController *>(&XInput);
 #endif
+//*********************************//
 
+
+//*********************************//
+//**** Button mappings ************//
+//*********************************//
 static constexpr u8 xinputMapKeys[8]{
   BUTTON_B,
   BUTTON_A,
@@ -292,16 +301,22 @@ static constexpr u8 emuMapButtons[8]{
   DPAD_LEFT,
   DPAD_RIGHT
 };
+//*********************************//
+
 
 //*********************************//
 //**** Variables set on plugin ****//
 //*********************************//
-static const bool isEmuFriendlyBinds = []() -> const bool {
-  u8 startupState = 0;
-
+static const u8 startupState = []() -> const u8 {
+  // note: 4*4 + 4! + 8 - 1 = 47 potential startup mode combinations
+  u8 setState = 0;
   setupJoysticks();
-  readController(startupState);
+  readController(setState);
 
+  return setState;
+}();
+
+static const bool isEmuFriendlyBinds = []() -> const bool {
   if (startupState & EMU_MODE)
     return true;
 
@@ -312,11 +327,6 @@ static const u8 *buttonsMap = []() -> const u8 * {
   if (isEmuFriendlyBinds)
     return emuMapButtons;
 
-  u8 startupState = 0;
-
-  setupJoysticks();
-  readController(startupState);
-
   if (startupState & GOOFY)
     return goofyMapButtons;
 
@@ -324,13 +334,9 @@ static const u8 *buttonsMap = []() -> const u8 * {
 }();
 
 // in microseconds
-static const unsigned long debounceIntervalPress = []() -> const unsigned long {
+static const u32 debounceIntervalPress = []() -> const u32 {
   u8 startupState = 0;
   double videoFreq = 0;
-
-  // note: 4*4 + 4! + 8 - 1 = 47 potential startup mode combinations
-  setupJoysticks();
-  readController(startupState);
 
   if (startupState & PAL_DEBOUNCING)
     videoFreq = 50;
@@ -339,37 +345,50 @@ static const unsigned long debounceIntervalPress = []() -> const unsigned long {
 
   constexpr double numOfFrames = 1.25;
 
-  return ((unsigned long)((1 / videoFreq) * 1000) * numOfFrames * 1000);
+  return ((u32)((1 / videoFreq) * 1000) * numOfFrames * 1000);
 }();
 
-static const unsigned long pollInterval = []() -> const unsigned long {
-  u8 startupState = 0;
+static const u32 pollInterval = []() -> const u32 {
+  //if (startupState | NES_SELECT)
+  //  return (POLL_RATE(startupState) * 1000);
 
-  setupJoysticks();
-  readController(startupState);
-
-  if (startupState | NES_SELECT)
-    return (POLL_RATE(startupState) * 1000);
-
-  return 2000;
+  return 1000-12;  //micros() is off by an average of +12us
 }();
+
+//void (*loopMain)();
+void loopTECFunc();
+void loopBasicFunc();
+
+//whatever devilry
+
+static const void (*loopMain)() = +[]() { 
+  if (isEmuFriendlyBinds)
+    return &loopBasicFunc;
+    
+  return &loopTECFunc;
+ }();
+ 
 //*********************************//
 
 
+
+//*********************************//
+//**** Debouncing *****************//
+//*********************************//
 static struct buttonClamp {
 // In microseconds
 //#define NO_DEBOUNCE
 #ifdef NO_DEBOUNCE
-  const unsigned long clampDownInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
-  const unsigned long clampUpInterval[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
+  const u32 clampDownInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
+  const u32 clampUpInterval[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const unsigned long debounceIntervalRelease = 1000;  // reduce over shifting
-  const unsigned long clampPressInterval[8]    { debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease };
-  const unsigned long clampReleaseInterval[8]  { debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress };
+  const u32 debounceIntervalRelease = 1000;  // reduce over shifting
+  const u32 clampPressInterval[8]    { debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease };
+  const u32 clampReleaseInterval[8]  { debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress };
 #endif
 
-  unsigned long onPressStateTimeStamp[8];
-  unsigned long onReleaseStateTimeStamp[8];
+  u32 onPressStateTimeStamp[8];
+  u32 onReleaseStateTimeStamp[8];
   bool isPressed[8]{ false, false, false, false, false, false, false, false };
 } clamp;
 
@@ -390,10 +409,7 @@ void readController(u8 &state) {
     wait;
   }
 }
-
-void (*loopMain)();
-void loopTECFunc();
-void loopBasicFunc();
+//*********************************//
 
 void setup() {
 //#define DEBUG_KEYBOARD
@@ -407,19 +423,16 @@ void setup() {
   for (u8 i = 0; i < 8; i++)
     clamp.onReleaseStateTimeStamp[i] = clamp.onPressStateTimeStamp[i] = micros();
 
-  u8 startupState = 0;
-  readController(startupState);
-
-  if (isEmuFriendlyBinds)
+ /* if (isEmuFriendlyBinds)
     loopMain = &loopBasicFunc;
-  else
-    loopMain = &loopTECFunc;
+    
+  loopMain =  &loopTECFunc;*/
 }
 
 void processInput(const u8 currentStates, u8 &processUpdateState) __attribute((always_inline));
 void processInput(const u8 processCurrentState, u8 &processUpdateState) {  // TODO: catch if select is pressed and diabled releases
   const u8 changedState = processCurrentState ^ previousState;
-  const unsigned long processCurrentTime = micros();
+  const u32 processCurrentTime = micros();
   for (u8 i = 0; i < 8; i++) {
     if ((changedState >> i) & 0b00000001) {
       if ((processCurrentState >> i) & 0b00000001) {
@@ -464,85 +477,86 @@ void handleSelect(const u8 updateStates) {
   }
 }
 
-static unsigned long previousTime = micros();
-static unsigned long currentTime = micros();
+static u32 previousTime = micros();
+static u32 currentTime = micros();
 
 void loopBasicFunc() {
-  if (currentTime - previousTime > pollInterval) {
+  u8 currentState = 0;
 
-    u8 currentState = 0;
+  readController(currentState);
 
-    readController(currentState);
+  if (currentState != previousState) {
 
-    if (currentState != previousState) {
+    processInput(currentState, updateState);
 
-      processInput(currentState, updateState);
-
-      if (updateState != previousState) {
-        updateInput(updateState);
-        previousState = updateState;
-        previousTime = currentTime;
-      }
+    if (updateState != previousState) {
+      updateInput(updateState);
+      previousState = updateState;
     }
   }
-  currentTime = micros();
 }
 
 void loopTECFunc() {
-  if (currentTime - previousTime > pollInterval) {
-    u8 currentState = 0;
+  u8 currentState = 0;
 
-    readController(currentState);
+  readController(currentState);
 
-    if (currentState != previousState) {
+  if (currentState != previousState) {
 
-      processInput(currentState, updateState);
+    processInput(currentState, updateState);
 
-      if (updateState != previousState) {
-        // Release select
-        if ((previousState & NES_SELECT) && (~updateState & NES_SELECT)) [[unlikely]] {
-          controller->setJoystick(XInputControl::JOY_RIGHT, false, false, false, false, false);  // XInput library handles state breaking well. leave it.
-          controller->setJoystick(XInputControl::JOY_LEFT, false, false, false, false, false);
-          controller->releaseAll();
+    if (updateState != previousState) {
+      // Release select
+      if ((previousState & NES_SELECT) && (~updateState & NES_SELECT)) [[unlikely]] {
+        controller->setJoystick(XInputControl::JOY_RIGHT, false, false, false, false, false);  // XInput library handles state breaking well. leave it.
+        controller->setJoystick(XInputControl::JOY_LEFT, false, false, false, false, false);
+        controller->releaseAll();
 
-          previousState = updateState = 0;
-          memset((void *)(clamp.isPressed), 0, sizeof(bool) * 8);
-        }
-
-        if ((updateState & NES_SELECT) == false) [[likely]] {
-          updateInput(updateState);
-        } else
-          handleSelect(updateState);
-
-        previousState = updateState;
-        previousTime = currentTime;
+        previousState = updateState = 0;
+        memset((void *)(clamp.isPressed), 0, sizeof(bool) * 8);
       }
+
+      if ((updateState & NES_SELECT) == false) [[likely]] {
+        updateInput(updateState);
+      } else
+        handleSelect(updateState);
+
+      previousState = updateState;
     }
   }
-  currentTime = micros(); // Pro Micro is accurate +/- 4 microseceonds
 }
+
+//#define Profile
+#ifdef Profile
+u32 printInterval = 1000;
+u32 previousPrint = millis();
+u32 min_d = 1000000;
+u32 max_d = 0;
+#endif
 
 void loop() {
 
-#if 0
-static uint_least64_t sum_of_difference = 0;
-static uint_least64_t start = 0;
-static uint_least64_t end = 0;
-static uint_least64_t n_samples = 0;
- // start = (double)micros();
-#endif
-
-  loopMain();
-
-#if 0
-  end = (uint_least64_t)micros();
-  uint_least64_t delta = end - start;
-  sum_of_difference += delta;
-  n_samples++;
+  u32 delta = currentTime - previousTime;
   
-  //if(sum_of_difference % (uint_least64_t)30 == 0) 
-  Serial.println(String("Average loop duration: ") + (double)sum_of_difference / (double)n_samples + String(" microseconds"));
-#endif
+  if (delta > pollInterval) {
+
+#ifdef Profile
+    min_d = min(min_d, delta);
+    max_d = max(max_d, delta);
+    if(millis() - previousPrint > 1000){
+      Serial.println(String("wait duration to function: ") + (delta)+" Min/Max: " + min_d + " " + max_d);
+      previousPrint = millis();
+      min_d = 1000000;
+      max_d = 0;
+    }
+#endif Profile
+
+    loopMain();
+    previousTime = currentTime;
+
+  }
+  currentTime = micros(); // Pro Micro is accurate +/- 4 microseceonds
+
 }
 
 #pragma GCC pop_options
