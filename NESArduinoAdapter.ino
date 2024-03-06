@@ -63,32 +63,8 @@ twice again, before pressing the upload button.  Once the Arudino IDE displays u
 upload to the microcontroller.  Putting a button in between the pins makes this much easier.
 */
 
-/*
-Tips for improving TEC latency
-  -Turn off v-sync and in fullscreen mode
-  -Turn off adaptive sync(gsync/freesync)
-  -Put settings to lowest(partical size to maximum), and increase until latency becomes problematic
-  -If using a multi-usb port, ensure other ports are empty
-  -Restart computer if misdrops get worse over time(or take a break)
-  -If using nvidia on windows, enable in-game overlay in geforce experience app, open overlay, click performance, click gear, choose screen position, trying getting the render latnecy statstic low as possible
-
-For all one of me playing TEC on linux:
-  -nvidia-settings->PowerMizer->set preferred mode to prefer maximum performance and other settings to performance
-  -Disable x11 compositor.  e.g. with steam's launch options:
-    "gsettings set org.mate.Marco.general compositing-manager false;  %command%; gsettings set org.mate.Marco.general compositing-manager true"
-  -Use a light weight desktop. e.g. mate, xfce, et al
-  -Install a low latency kernel
-  -Install gamemode
-    e.g. steam launch options: gamemoderun %command%
-
-For the diagnosible on Windows(not tested):
-  -Install AutoLogin
-  -Diable widgets
-  -Replace the windows shell with Steam(https://steamcommunity.com/groups/bigpicture/discussions/1/864958451556578063/)
-*/
-
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
-//#define USE_KEYBOARD
+#define USE_KEYBOARD
 
 #ifndef USE_KEYBOARD
 #define USE_XINPUT
@@ -375,7 +351,7 @@ static const unsigned long pollInterval = []() -> const unsigned long {
   if (startupState | NES_SELECT)
     return (POLL_RATE(startupState) * 1000);
 
-  return 1000;
+  return 2000;
 }();
 //*********************************//
 
@@ -543,7 +519,7 @@ void loopTECFunc() {
       }
     }
   }
-  currentTime = micros();
+  currentTime = micros(); // Pro Micro is accurate +/- 4 microseceonds
 }
 
 void loop() {
