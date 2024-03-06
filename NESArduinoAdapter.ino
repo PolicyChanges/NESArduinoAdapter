@@ -64,7 +64,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 */
 
 // Comment out below and switch board to xinput(from url above) to act as an xbox controller/xinput device
-#define USE_KEYBOARD
+//#define USE_KEYBOARD
 
 #ifndef USE_KEYBOARD
 #define USE_XINPUT
@@ -307,16 +307,10 @@ static constexpr u8 emuMapButtons[8]{
 //*********************************//
 //**** Variables set on plugin ****//
 //*********************************//
-static const u8 startupState = []() -> const u8 {
-  // note: 4*4 + 4! + 8 - 1 = 47 potential startup mode combinations
-  u8 setState = 0;
-  setupJoysticks();
-  readController(setState);
-
-  return setState;
-}();
-
 static const bool isEmuFriendlyBinds = []() -> const bool {
+  u8 startupState = 0;
+  setupJoysticks();
+  readController(startupState);
   if (startupState & EMU_MODE)
     return true;
 
@@ -324,6 +318,9 @@ static const bool isEmuFriendlyBinds = []() -> const bool {
 }();
 
 static const u8 *buttonsMap = []() -> const u8 * {
+  u8 startupState = 0;
+  setupJoysticks();
+  readController(startupState);
   if (isEmuFriendlyBinds)
     return emuMapButtons;
 
@@ -336,6 +333,8 @@ static const u8 *buttonsMap = []() -> const u8 * {
 // in microseconds
 static const u32 debounceIntervalPress = []() -> const u32 {
   u8 startupState = 0;
+  setupJoysticks();
+  readController(startupState);
   double videoFreq = 0;
 
   if (startupState & PAL_DEBOUNCING)
@@ -349,24 +348,26 @@ static const u32 debounceIntervalPress = []() -> const u32 {
 }();
 
 static const u32 pollInterval = []() -> const u32 {
-  //if (startupState | NES_SELECT)
-  //  return (POLL_RATE(startupState) * 1000);
+  u8 startupState = 0;
+  setupJoysticks();
+  readController(startupState);
+  if (startupState | NES_SELECT)
+    return (POLL_RATE(startupState) * 1000);
 
-  return 1000-12;  //micros() is off by an average of +12us
+  return 1000-12;  //micros() skews min +4. mode is +12us ~70%
 }();
 
-//void (*loopMain)();
+void (*loopMain)();
 void loopTECFunc();
 void loopBasicFunc();
 
-//whatever devilry
-
-static const void (*loopMain)() = +[]() { 
-  if (isEmuFriendlyBinds)
+//whatever devilry. no performance impact.
+/*static const void (*loopMain)() = +[]() { 
+ if (isEmuFriendlyBinds)
     return &loopBasicFunc;
     
   return &loopTECFunc;
- }();
+ }();*/
  
 //*********************************//
 
@@ -422,11 +423,10 @@ void setup() {
 
   for (u8 i = 0; i < 8; i++)
     clamp.onReleaseStateTimeStamp[i] = clamp.onPressStateTimeStamp[i] = micros();
-
- /* if (isEmuFriendlyBinds)
+ if (isEmuFriendlyBinds)
     loopMain = &loopBasicFunc;
     
-  loopMain =  &loopTECFunc;*/
+  loopMain = &loopTECFunc;
 }
 
 void processInput(const u8 currentStates, u8 &processUpdateState) __attribute((always_inline));
@@ -543,7 +543,8 @@ void loop() {
 #ifdef Profile
     min_d = min(min_d, delta);
     max_d = max(max_d, delta);
-    if(millis() - previousPrint > 1000){
+    u32 currentPrint = millis();
+    if(currentPrint - previousPrint > 1000){
       Serial.println(String("wait duration to function: ") + (delta)+" Min/Max: " + min_d + " " + max_d);
       previousPrint = millis();
       min_d = 1000000;
@@ -555,7 +556,7 @@ void loop() {
     previousTime = currentTime;
 
   }
-  currentTime = micros(); // Pro Micro is accurate +/- 4 microseceonds
+  currentTime = micros();
 
 }
 
