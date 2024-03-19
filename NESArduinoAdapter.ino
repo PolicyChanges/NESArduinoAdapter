@@ -86,6 +86,7 @@ upload to the microcontroller.  Putting a button in between the pins makes this 
 #define PAL_DEBOUNCING NES_A
 #define GOOFY NES_B
 #define EMU_MODE NES_START
+// Shift right for d-pad bits
 #define POLL_RATE(x) (x >> 4)
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
@@ -330,6 +331,8 @@ static const u8 *buttonsMap = []() -> const u8 * {
   return xinputMapKeys;
 }();
 
+constexpr double numOfFrames = 1.4;
+
 // in microseconds
 static const u32 debounceIntervalPress = []() -> const u32 {
   u8 startupState = 0;
@@ -342,8 +345,6 @@ static const u32 debounceIntervalPress = []() -> const u32 {
   else
     videoFreq = 60;
 
-  constexpr double numOfFrames = 1.25;
-
   return ((u32)((1 / videoFreq) * 1000) * numOfFrames * 1000);
 }();
 
@@ -354,7 +355,10 @@ static const u32 pollInterval = []() -> const u32 {
   if (startupState | NES_SELECT)
     return (POLL_RATE(startupState) * 1000);
 
-  return 1000-12;  //micros() skews min +4. mode is +12us ~70%
+  // poll interval notes:
+  // micros() skews min +4. mode is +12us ~70%
+  // double flips on linux <= 1000
+  return 2000-12;  
 }();
 
 void (*loopMain)();
@@ -383,7 +387,8 @@ static struct buttonClamp {
   const u32 clampDownInterval[8]{ 0, 0, 0, 0, 0, 0, 0, 0 };
   const u32 clampUpInterval[8]  { 0, 0, 0, 0, 0, 0, 0, 0 };
 #else
-  const u32 debounceIntervalRelease = 1000;  // reduce over shifting
+  const u32 debounceIntervalRelease = 2 - numOfFrames;  
+
   const u32 clampPressInterval[8]    { debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease, debounceIntervalRelease };
   const u32 clampReleaseInterval[8]  { debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress, debounceIntervalPress };
 #endif
