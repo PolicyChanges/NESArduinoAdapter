@@ -22,13 +22,10 @@ void setupJoysticks() {
 #define clock_low digitalWrite(CLOCK1, LOW)
 #define clock_high digitalWrite(CLOCK1, HIGH)
 #define wait delayMicroseconds(12)
-// read + rising & falling edge + aduino us error + propagation padding
 #define waitfullread delayMicroseconds(240)
-// rising & falling edge + aduino us error + propagation padding
 #define waitread delayMicroseconds(36)
 
 static uint8_t previousState = 0;
-static uint8_t lastKnownGoodState = 0;
 volatile uint8_t currentState = 0;
 
 /* Reference
@@ -61,10 +58,10 @@ void setup() {
   setupJoysticks();
 }
 
-static unsigned long apress = 0;
-static unsigned long arelease = millis();
-static unsigned long bpress = 0;
-static unsigned long brelease = millis();
+static unsigned long APressedTimeStamp = micros();
+static unsigned long BPressedTimeStamp = micros();
+
+constexpr unsigned long clampInterval = 32000;
 
 void processInput(uint8_t currentStates, uint8_t changedStates) __attribute((always_inline));
 void processInput(uint8_t currentStates, uint8_t changedStates) {
@@ -72,37 +69,25 @@ void processInput(uint8_t currentStates, uint8_t changedStates) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentStates >> i) & 0b00000001)) {
         if (i == 0) {
-          if (apress == 0) {
-            apress = millis();
-          } else {
-            arelease = millis();
-
-            if ((arelease - apress) > 32) {
-              Keyboard.press(keyMapKeys[0]);
-              apress = millis();
-            }
+          if ((micros() - APressedTimeStamp) > clampInterval) {
+            Keyboard.press(keyMapKeys[0]);
+            APressedTimeStamp = micros();
           }
         } else if (i == 1) {
-          if (apress == 0) {
-            bpress = millis();
-          } else {
-            brelease = millis();
-            if ((brelease - bpress) > 32) {
-              Keyboard.press(keyMapKeys[1]);
-              bpress = millis();
-            }
+          if ((micros() - BPressedTimeStamp) > clampInterval) {
+            Keyboard.press(keyMapKeys[1]);
+            BPressedTimeStamp = micros();
           }
-        } else {
+        } else 
           Keyboard.press(keyMapKeys[i]);
-        }
       } 
       else {
         if (i == 0) {
-          apress = millis();
+          APressedTimeStamp = micros();
           Keyboard.release(keyMapKeys[0]);
         }
         else if (i == 1) {
-          bpress = millis();
+          BPressedTimeStamp = micros();
           Keyboard.release(keyMapKeys[1]);
         }
         else {
@@ -133,8 +118,7 @@ void readController(uint8_t *state) {
 static unsigned long previousTime = micros();
 static unsigned long currentTime = micros();
 
-static constexpr unsigned long pollInterval = 4000;     // 4000 microseconds
-static constexpr unsigned long badStateInterval = 999;  // 999 microseconds
+static constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
 
 void loop() 
 {
@@ -146,12 +130,11 @@ void loop()
 
     uint8_t changedButtonStates = currentState ^ previousState;
 
-    uint8_t output[2];
-    memcpy(&output[0], &changedButtonStates, 1);
-    memcpy(&output[1], &currentState, 1);
+    //uint8_t output[2];
+    //memcpy(&output[0], &changedButtonStates, 1);
+    //memcpy(&output[1], &currentState, 1);
 
-    if (currentTime - micros() > badStateInterval)
-      processInput(output[1], output[0]);
+    processInput(currentState, previousState);
 
     previousState = currentState;
     previousTime = currentTime;
