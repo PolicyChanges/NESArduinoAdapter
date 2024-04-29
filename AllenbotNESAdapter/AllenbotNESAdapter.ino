@@ -130,10 +130,6 @@ void loop()
 
     uint8_t changedButtonStates = currentState ^ previousState;
 
-    //uint8_t output[2];
-    //memcpy(&output[0], &changedButtonStates, 1);
-    //memcpy(&output[1], &currentState, 1);
-
     processInput(currentState, previousState);
 
     previousState = currentState;
