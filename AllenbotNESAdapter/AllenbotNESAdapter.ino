@@ -5,13 +5,14 @@
 #include <KeyboardLayout.h>
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
-const uint8_t inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
+constexpr u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
 
 #define CLOCK1 inputPinsPort1[0]
 #define LATCH1 inputPinsPort1[1]
 #define DATA1 inputPinsPort1[2]
 
-void setupJoysticks() {
+void setupJoysticks()
+{
   pinMode(LATCH1, OUTPUT);
   pinMode(CLOCK1, OUTPUT);
   pinMode(DATA1, INPUT_PULLUP);
@@ -25,8 +26,8 @@ void setupJoysticks() {
 #define waitfullread delayMicroseconds(240)
 #define waitread delayMicroseconds(36)
 
-static uint8_t previousState = 0;
-volatile uint8_t currentState = 0;
+static u8 previousState = 0;
+static u8 currentState = 0;
 
 /* Reference
 #define NES_A       B00000001
@@ -42,7 +43,8 @@ volatile uint8_t currentState = 0;
 #define KEY_X 0x78  // Rotate clockwise
 #define KEY_Z 0x7A  // Rotate counter-clockwise
 
-constexpr uint8_t keyMapKeys[8]{
+constexpr u8 keyMapKeys[8]
+{
   KEY_X,           // NES Controller A Button
   KEY_Z,           // NES Controller B Button
   KEY_ESC,         // NES Controller Select Button
@@ -53,28 +55,30 @@ constexpr uint8_t keyMapKeys[8]{
   KEY_RIGHT_ARROW  // NES Controller Right Button
 };
 
-void setup() {
+void setup() 
+{
   Keyboard.begin();
   setupJoysticks();
 }
 
-static unsigned long APressedTimeStamp = micros();
-static unsigned long BPressedTimeStamp = micros();
+static u32 APressedTimeStamp = micros();
+static u32 BPressedTimeStamp = micros();
 
-constexpr unsigned long clampInterval = 32000;
+constexpr u32 clampInterval = 32000;
 
-void processInput(uint8_t currentStates, uint8_t changedStates) __attribute((always_inline));
-void processInput(uint8_t currentStates, uint8_t changedStates) {
+void processInput(u8 currentStates, u8 changedStates) __attribute((always_inline));
+void processInput(u8 currentStates, u8 changedStates) 
+{
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentStates >> i) & 0b00000001)) {
         if (i == 0) {
-          if ((micros() - APressedTimeStamp) > clampInterval) {
+          if (micros() - APressedTimeStamp > clampInterval) {
             Keyboard.press(keyMapKeys[0]);
             APressedTimeStamp = micros();
           }
         } else if (i == 1) {
-          if ((micros() - BPressedTimeStamp) > clampInterval) {
+          if (micros() - BPressedTimeStamp > clampInterval) {
             Keyboard.press(keyMapKeys[1]);
             BPressedTimeStamp = micros();
           }
@@ -83,12 +87,12 @@ void processInput(uint8_t currentStates, uint8_t changedStates) {
       } 
       else {
         if (i == 0) {
-          APressedTimeStamp = micros();
           Keyboard.release(keyMapKeys[0]);
+          APressedTimeStamp = micros();
         }
         else if (i == 1) {
-          BPressedTimeStamp = micros();
           Keyboard.release(keyMapKeys[1]);
+          BPressedTimeStamp = micros();
         }
         else {
           Keyboard.release(keyMapKeys[i]);
@@ -98,8 +102,9 @@ void processInput(uint8_t currentStates, uint8_t changedStates) {
   }
 }
 
-void readController(uint8_t *state) __attribute((always_inline));
-void readController(uint8_t *state) {
+void readController(u8 &state) __attribute((always_inline));
+void readController(u8 &state) 
+{
   latch_low;
   clock_low;
   latch_high;
@@ -107,7 +112,7 @@ void readController(uint8_t *state) {
   latch_low;
 
   for (int i = 0; i < 8; i++) {
-    *state |= (!digitalRead(DATA1) << i);
+    state |= (!digitalRead(DATA1) << i);
     clock_high;
     wait;
     clock_low;
@@ -118,7 +123,7 @@ void readController(uint8_t *state) {
 static unsigned long previousTime = micros();
 static unsigned long currentTime = micros();
 
-static constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
+constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
 
 void loop() 
 {
@@ -126,15 +131,16 @@ void loop()
 
   if (currentTime - previousTime > pollInterval) {
    
-    readController(&currentState);
+    readController(currentState);
 
-    uint8_t changedButtonStates = currentState ^ previousState;
+    u8 changedButtonStates = currentState ^ previousState;
 
     processInput(currentState, previousState);
 
     previousState = currentState;
     previousTime = currentTime;
   }
+
   currentTime = micros();
 }
 
