@@ -52,14 +52,14 @@ static u8 currentState = 0;
 
 constexpr u8 keyMapKeys[8]
 {
-  KEY_LEFT_ARROW,           // NES Controller A Button
-  KEY_RIGHT_ARROW,           // NES Controller B Button
-  KEY_F,         // NES Controller Select Button
-  KEY_J,           // NES Controller Enter Button
-  KEY_W,    // NES Controller Up Button
-  KEY_S,  // NES Controller Down Button
-  KEY_A,  // NES Controller Left Button
-  KEY_D  // NES Controller Right Button
+  KEY_LEFT_ARROW,   // NES Controller A Button
+  KEY_RIGHT_ARROW,  // NES Controller B Button
+  KEY_F,            // NES Controller Select Button
+  KEY_J,            // NES Controller Enter Button
+  KEY_W,            // NES Controller Up Button
+  KEY_S,            // NES Controller Down Button
+  KEY_A,            // NES Controller Left Button
+  KEY_D             // NES Controller Right Button
 };
 
 void setup() 
