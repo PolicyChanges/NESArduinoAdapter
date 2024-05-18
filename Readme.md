@@ -1,11 +1,11 @@
-Arudino sketch mapping nes controller to keyboard with debouncing</b></b>
+Arudino sketch mapping nes controller to keyboard with debouncing<br /><br />
 
-Mapping:</b></b>
-  KEY_LEFT_ARROW,   // NES Controller A Button</b></b>
-  KEY_RIGHT_ARROW,  // NES Controller B Button</b></b>
-  KEY_F,            // NES Controller Select Button</b></b>
-  KEY_J,            // NES Controller Enter Button</b></b>
-  KEY_W,            // NES Controller Up Button</b></b>
-  KEY_S,            // NES Controller Down Button</b></b>
-  KEY_A,            // NES Controller Left Button</b></b>
-  KEY_D             // NES Controller Right Button</b></b>
+Mapping:<br />
+  KEY_LEFT_ARROW,   // NES Controller A Button<br />
+  KEY_RIGHT_ARROW,  // NES Controller B Button<br />
+  KEY_F,            // NES Controller Select Button<br />
+  KEY_J,            // NES Controller Enter Button<br />
+  KEY_W,            // NES Controller Up Button<br />
+  KEY_S,            // NES Controller Down Button<br />
+  KEY_A,            // NES Controller Left Button<br />
+  KEY_D             // NES Controller Right Button<br />
