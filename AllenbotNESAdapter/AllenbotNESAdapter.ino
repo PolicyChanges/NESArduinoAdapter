@@ -40,19 +40,26 @@ static u8 currentState = 0;
 #define NES_RIGHT   B10000000
 */
 
-#define KEY_X 0x78  // Rotate clockwise
-#define KEY_Z 0x7A  // Rotate counter-clockwise
+#define currentTime micros()
+
+#define KEY_W 0x77
+#define KEY_A 0x97
+#define KEY_S 0x73
+#define KEY_D 0x64
+
+#define KEY_F 0x66
+#define KEY_J 0x6A
 
 constexpr u8 keyMapKeys[8]
 {
-  KEY_X,           // NES Controller A Button
-  KEY_Z,           // NES Controller B Button
-  KEY_ESC,         // NES Controller Select Button
-  KEY_RETURN,      // NES Controller Enter Button
-  KEY_UP_ARROW,    // NES Controller Up Button
-  KEY_DOWN_ARROW,  // NES Controller Down Button
-  KEY_LEFT_ARROW,  // NES Controller Left Button
-  KEY_RIGHT_ARROW  // NES Controller Right Button
+  KEY_LEFT_ARROW,           // NES Controller A Button
+  KEY_RIGHT_ARROW,           // NES Controller B Button
+  KEY_F,         // NES Controller Select Button
+  KEY_J,           // NES Controller Enter Button
+  KEY_W,    // NES Controller Up Button
+  KEY_S,  // NES Controller Down Button
+  KEY_A,  // NES Controller Left Button
+  KEY_D  // NES Controller Right Button
 };
 
 void setup() 
@@ -73,12 +80,12 @@ void processInput(u8 currentStates, u8 changedStates)
     if ((changedStates >> i) & 0b00000001) {
       if (((currentStates >> i) & 0b00000001)) {
         if (i == 0) {
-          if (micros() - APressedTimeStamp > clampInterval) {
+          if (currentTime - APressedTimeStamp > clampInterval) {
             Keyboard.press(keyMapKeys[0]);
             APressedTimeStamp = micros();
           }
         } else if (i == 1) {
-          if (micros() - BPressedTimeStamp > clampInterval) {
+          if (currentTime - BPressedTimeStamp > clampInterval) {
             Keyboard.press(keyMapKeys[1]);
             BPressedTimeStamp = micros();
           }
@@ -121,7 +128,6 @@ void readController(u8 &state)
 }
 
 static unsigned long previousTime = micros();
-static unsigned long currentTime = micros();
 
 constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
 
@@ -140,8 +146,6 @@ void loop()
     previousState = currentState;
     previousTime = currentTime;
   }
-
-  currentTime = micros();
 }
 
 #pragma GCC pop_options
