@@ -2,7 +2,6 @@
 #pragma GCC push_options
 
 #include <Keyboard.h>
-#include <KeyboardLayout.h>
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
 constexpr u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
@@ -50,6 +49,24 @@ static u8 currentState = 0;
 #define KEY_F 0x66
 #define KEY_J 0x6A
 
+#define KEY_X 0x78
+#define KEY_Z 0x7A
+
+//#define TEC_DEFAULT
+
+#ifdef TEC_DEFAULT
+constexpr u8 keyMapKeys[8]
+{
+  KEY_Z,                      // NES Controller A Button
+  KEY_X,                      // NES Controller B Button
+  KEY_ESC,                    // NES Controller Select Button
+  KEY_RETURN,                 // NES Controller Enter Button
+  KEY_UP_ARROW,               // NES Controller Up Button
+  KEY_DOWN_ARROW,             // NES Controller Down Button
+  KEY_LEFT_ARROW,             // NES Controller Left Button
+  KEY_RIGHT_ARROW             // NES Controller Right Button
+};
+#else
 constexpr u8 keyMapKeys[8]
 {
   KEY_LEFT_ARROW,   // NES Controller A Button
@@ -61,51 +78,42 @@ constexpr u8 keyMapKeys[8]
   KEY_A,            // NES Controller Left Button
   KEY_D             // NES Controller Right Button
 };
+#endif
+struct debounceButton
+{
+  u32 buttonPressedInterval[8]  = {16000, 16000, 0, 0, 0, 0, 0, 0};
+  u32 buttonReleasedInterval[8] = {16000, 16000, 0, 0, 0, 0, 0, 0};
+  u32 buttonPressedTimeStamp[8];
+  u32 buttonReleasedTimeStamp[8];
+} debounce;
 
 void setup() 
 {
   Keyboard.begin();
   setupJoysticks();
+  
+  for(int i = 0; i < 8; i++) {
+    debounce.buttonPressedTimeStamp[i] = micros();
+    debounce.buttonReleasedTimeStamp[i] = micros();
+  }
 }
-
-static u32 APressedTimeStamp = micros();
-static u32 BPressedTimeStamp = micros();
-
-constexpr u32 clampInterval = 32000;
 
 void processInput(u8 currentStates, u8 changedStates) 
 {
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentStates >> i) & 0b00000001)) {
-        if (i == 0) {
-          if (currentTime - APressedTimeStamp > clampInterval) {
-            Keyboard.press(keyMapKeys[0]);
-            APressedTimeStamp = micros();
-          }
-        } else if (i == 1) {
-          if (currentTime - BPressedTimeStamp > clampInterval) {
-            Keyboard.press(keyMapKeys[1]);
-            BPressedTimeStamp = micros();
-          }
-        } else 
+        if (currentTime - debounce.buttonPressedTimeStamp[i] > debounce.buttonPressedInterval[i]) {
           Keyboard.press(keyMapKeys[i]);
-      } 
-      else {
-        if (i == 0) {
-          Keyboard.release(keyMapKeys[0]);
-          APressedTimeStamp = micros();
-        }
-        else if (i == 1) {
-          Keyboard.release(keyMapKeys[1]);
-          BPressedTimeStamp = micros();
-        }
-        else {
-          Keyboard.release(keyMapKeys[i]);
+          debounce.buttonPressedTimeStamp[i] = micros();
         }
       }
+      else if (currentTime - debounce.buttonReleasedTimeStamp[i] > debounce.buttonReleasedInterval[i]) {
+        Keyboard.release(keyMapKeys[i]);
+        debounce.buttonReleasedTimeStamp[i] = micros();
+      }
     }
-  }
+  } 
 }
 
 void readController(u8 &state) 
