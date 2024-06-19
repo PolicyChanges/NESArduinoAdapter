@@ -28,7 +28,7 @@ void setupJoysticks()
 static u8 previousState = 0;
 static u8 currentState = 0;
 
-/* Reference
+
 #define NES_A       B00000001
 #define NES_B       B00000010
 #define NES_SELECT  B00000100
@@ -37,7 +37,7 @@ static u8 currentState = 0;
 #define NES_DOWN    B00100000
 #define NES_LEFT    B01000000
 #define NES_RIGHT   B10000000
-*/
+
 
 #define currentTime micros()
 
@@ -52,14 +52,14 @@ static u8 currentState = 0;
 #define KEY_X 0x78
 #define KEY_Z 0x7A
 
-//#define TEC_DEFAULT
+#define TEC_DEFAULT
 
 #ifdef TEC_DEFAULT
 constexpr u8 keyMapKeys[8]
 {
-  KEY_Z,                      // NES Controller A Button
-  KEY_X,                      // NES Controller B Button
-  KEY_ESC,                    // NES Controller Select Button
+  KEY_X,                      // NES Controller A Button
+  KEY_Z,                      // NES Controller B Button
+  0x0,                        // NES Controller Select Button
   KEY_RETURN,                 // NES Controller Enter Button
   KEY_UP_ARROW,               // NES Controller Up Button
   KEY_DOWN_ARROW,             // NES Controller Down Button
@@ -137,6 +137,10 @@ static unsigned long previousTime = micros();
 
 constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
 
+#ifdef TEC_DEFAULT
+bool handleTECInput();
+#endif
+
 void loop() 
 {
   currentState = 0;
@@ -146,12 +150,75 @@ void loop()
     readController(currentState);
 
     u8 changedButtonStates = currentState ^ previousState;
-
+#ifdef TEC_DEFAULT
+  if(handleTECInput() == false)
+#endif
     processInput(currentState, previousState);
 
     previousState = currentState;
     previousTime = currentTime;
   }
 }
+
+#ifdef TEC_DEFAULT
+bool handleTECInput() 
+{
+  bool isHandlingInput = false;
+  
+  if((previousState & NES_SELECT) && !(currentState & NES_SELECT))   // if select and another button was pressed in the previous input, release all
+    Keyboard.releaseAll();
+  else if(currentState & NES_SELECT)
+  {
+    isHandlingInput = true;
+
+#define KEY_1 0x31
+
+    if(currentState & NES_UP && !(previousState & NES_UP)) {
+      Keyboard.press(KEY_1);
+      Keyboard.press(KEY_UP_ARROW);
+      Keyboard.release(KEY_1);
+      Keyboard.release(KEY_UP_ARROW);
+    }
+    if (currentState & NES_DOWN && !(previousState & NES_DOWN)) {
+      Keyboard.press(KEY_1);
+      Keyboard.press(KEY_DOWN_ARROW);
+      Keyboard.release(KEY_1);
+      Keyboard.release(KEY_DOWN_ARROW);
+    } 
+    
+    if (currentState & NES_LEFT && !(previousState & NES_LEFT)) {
+      Keyboard.press(KEY_1);
+      Keyboard.press(KEY_LEFT_ARROW);
+      Keyboard.release(KEY_1);
+      Keyboard.release(KEY_LEFT_ARROW);
+    } 
+    
+    if (currentState & NES_RIGHT && !(previousState & NES_RIGHT)){
+      Keyboard.press(KEY_1);
+      Keyboard.press(KEY_RIGHT_ARROW);
+      Keyboard.release(KEY_1);
+      Keyboard.release(KEY_RIGHT_ARROW);
+    }
+
+    if((previousState & NES_A) && !(currentState & NES_A))
+      Keyboard.release(0x77);
+    else if(currentState & NES_A) 
+      Keyboard.press(0x77); // W key
+    
+    if((previousState & NES_B) && !(currentState & NES_B))
+      Keyboard.release(0x73);
+    else if(currentState & NES_B)
+      Keyboard.press(0x73); // S key 
+    
+    
+    if((previousState & NES_START) && !(currentState & NES_START))
+      Keyboard.release(KEY_ESC);
+    else if(currentState & NES_START)
+      Keyboard.press(KEY_ESC);
+  }   
+
+  return isHandlingInput;
+}
+#endif
 
 #pragma GCC pop_options
