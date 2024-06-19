@@ -52,7 +52,7 @@ static u8 currentState = 0;
 #define KEY_X 0x78
 #define KEY_Z 0x7A
 
-#define TEC_DEFAULT
+//#define TEC_DEFAULT
 
 #ifdef TEC_DEFAULT
 constexpr u8 keyMapKeys[8]
