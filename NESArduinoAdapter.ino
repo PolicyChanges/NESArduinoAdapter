@@ -1,7 +1,7 @@
 #pragma GCC optimize("O3")
 #pragma GCC push_options
 
-#include <Keyboard.h>
+#include <XInput.h>
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
 constexpr u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
@@ -56,16 +56,15 @@ static u8 currentState = 0;
 #define TEC_DEFAULT
 
 #ifdef TEC_DEFAULT
-constexpr u8 keyMapKeys[8]
-{
-  KEY_X,                      // NES Controller A Button
-  KEY_Z,                      // NES Controller B Button
-  0x0,                        // NES Controller Select Button
-  KEY_RETURN,                 // NES Controller Enter Button
-  KEY_UP_ARROW,               // NES Controller Up Button
-  KEY_DOWN_ARROW,             // NES Controller Down Button
-  KEY_LEFT_ARROW,             // NES Controller Left Button
-  KEY_RIGHT_ARROW             // NES Controller Right Button
+static constexpr u8 xinputMapKeys[8]{
+  BUTTON_B,
+  BUTTON_A,
+  BUTTON_BACK,
+  BUTTON_START,
+  DPAD_UP,
+  DPAD_DOWN,
+  DPAD_LEFT,
+  DPAD_RIGHT
 };
 #else
 constexpr u8 keyMapKeys[8]
@@ -80,6 +79,7 @@ constexpr u8 keyMapKeys[8]
   KEY_D             // NES Controller Right Button
 };
 #endif
+
 struct debounceButton
 {
 #ifdef LINUX  // Note: cdc_acm - HZ/CLK_TICK = 100
@@ -96,7 +96,7 @@ struct debounceButton
 
 void setup() 
 {
-  Keyboard.begin();
+  XInput.begin();
   setupJoysticks();
   
   for(int i = 0; i < 8; i++) {
@@ -111,12 +111,12 @@ void processInput(u8 currentStates, u8 changedStates)
     if ((changedStates >> i) & 0b00000001) {
       if (((currentStates >> i) & 0b00000001)) {
         if (currentTime - debounce.buttonPressedTimeStamp[i] > debounce.buttonPressedInterval[i]) {
-          Keyboard.press(keyMapKeys[i]);
+          XInput.press(xinputMapKeys[i]);
           debounce.buttonPressedTimeStamp[i] = micros();
         }
       }
       else if (currentTime - debounce.buttonReleasedTimeStamp[i] > debounce.buttonReleasedInterval[i]) {
-        Keyboard.release(keyMapKeys[i]);
+        XInput.release(xinputMapKeys[i]);
         debounce.buttonReleasedTimeStamp[i] = micros();
       }
     }
@@ -158,7 +158,7 @@ void loop()
 
     u8 changedButtonStates = currentState ^ previousState;
 #ifdef TEC_DEFAULT
-  if(handleTECInput() == false)
+  //if(handleTECInput() == false)
 #endif
     processInput(currentState, previousState);
 
@@ -167,7 +167,7 @@ void loop()
   }
 }
 
-#ifdef TEC_DEFAULT
+#ifdef asdf //TEC_DEFAULT
 bool handleTECInput() 
 {
   bool isHandlingInput = false;
