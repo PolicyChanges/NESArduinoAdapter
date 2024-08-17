@@ -52,7 +52,8 @@ static u8 currentState = 0;
 #define KEY_X 0x78
 #define KEY_Z 0x7A
 
-//#define TEC_DEFAULT
+#define LINUX
+#define TEC_DEFAULT
 
 #ifdef TEC_DEFAULT
 constexpr u8 keyMapKeys[8]
@@ -81,8 +82,14 @@ constexpr u8 keyMapKeys[8]
 #endif
 struct debounceButton
 {
+#ifdef LINUX  // Note: cdc_acm - HZ/CLK_TICK = 100
+  u32 buttonPressedInterval[8]  = {16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000};
+  u32 buttonReleasedInterval[8] = {16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000};
+#else
   u32 buttonPressedInterval[8]  = {16000, 16000, 0, 0, 0, 0, 0, 0};
   u32 buttonReleasedInterval[8] = {16000, 16000, 0, 0, 0, 0, 0, 0};
+#endif
+
   u32 buttonPressedTimeStamp[8];
   u32 buttonReleasedTimeStamp[8];
 } debounce;
