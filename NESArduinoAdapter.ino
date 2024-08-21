@@ -53,9 +53,7 @@ static u8 currentState = 0;
 #define KEY_Z 0x7A
 
 #define LINUX
-#define TEC_DEFAULT
 
-#ifdef TEC_DEFAULT
 static constexpr u8 xinputMapKeys[8]{
   BUTTON_B,
   BUTTON_A,
@@ -66,19 +64,6 @@ static constexpr u8 xinputMapKeys[8]{
   DPAD_LEFT,
   DPAD_RIGHT
 };
-#else
-constexpr u8 keyMapKeys[8]
-{
-  KEY_LEFT_ARROW,   // NES Controller A Button
-  KEY_RIGHT_ARROW,  // NES Controller B Button
-  KEY_F,            // NES Controller Select Button
-  KEY_J,            // NES Controller Enter Button
-  KEY_W,            // NES Controller Up Button
-  KEY_S,            // NES Controller Down Button
-  KEY_A,            // NES Controller Left Button
-  KEY_D             // NES Controller Right Button
-};
-#endif
 
 struct debounceButton
 {
@@ -142,7 +127,7 @@ void readController(u8 &state)
 
 static unsigned long previousTime = micros();
 
-constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
+constexpr unsigned long pollInterval = 1000;     // 2000 microseconds
 
 #ifdef TEC_DEFAULT
 bool handleTECInput();
@@ -157,17 +142,16 @@ void loop()
     readController(currentState);
 
     u8 changedButtonStates = currentState ^ previousState;
-#ifdef TEC_DEFAULT
-  if(handleTECInput() == false)
-#endif
-    processInput(currentState, previousState);
+
+    if(handleTECInput() == false)
+      processInput(currentState, previousState);
 
     previousState = currentState;
     previousTime = currentTime;
   }
 }
 
-#ifdef TEC_DEFAULT
+
 bool handleTECInput() 
 {
   bool isHandlingInput = false;
@@ -178,9 +162,9 @@ bool handleTECInput()
   {
     isHandlingInput = true;
 
-    // menu navigation
+    // playfield zoom -- select + a/b 
     XInput.setJoystick(XInputControl::JOY_LEFT, currentState & NES_B, currentState & NES_A, false, false, false);  
-    // emotes
+    // emotes -- select + directional pad
     XInput.setJoystick(XInputControl::JOY_RIGHT,
                             currentState & NES_UP && !(previousState & NES_UP), 
                             currentState & NES_DOWN && !(previousState & NES_DOWN),                   
@@ -191,6 +175,5 @@ bool handleTECInput()
 
   return isHandlingInput;
 }
-#endif
 
 #pragma GCC pop_options
