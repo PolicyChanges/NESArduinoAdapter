@@ -158,7 +158,7 @@ void loop()
 
     u8 changedButtonStates = currentState ^ previousState;
 #ifdef TEC_DEFAULT
-  //if(handleTECInput() == false)
+  if(handleTECInput() == false)
 #endif
     processInput(currentState, previousState);
 
@@ -167,61 +167,26 @@ void loop()
   }
 }
 
-#ifdef asdf //TEC_DEFAULT
+#ifdef TEC_DEFAULT
 bool handleTECInput() 
 {
   bool isHandlingInput = false;
   
   if((previousState & NES_SELECT) && !(currentState & NES_SELECT))   // if select and another button was pressed in the previous input, release all
-    Keyboard.releaseAll();
+    XInput.releaseAll();
   else if(currentState & NES_SELECT)
   {
     isHandlingInput = true;
 
-#define KEY_1 0x31
-
-    if(currentState & NES_UP && !(previousState & NES_UP)) {
-      Keyboard.press(KEY_1);
-      Keyboard.press(KEY_UP_ARROW);
-      Keyboard.release(KEY_1);
-      Keyboard.release(KEY_UP_ARROW);
-    }
-    if (currentState & NES_DOWN && !(previousState & NES_DOWN)) {
-      Keyboard.press(KEY_1);
-      Keyboard.press(KEY_DOWN_ARROW);
-      Keyboard.release(KEY_1);
-      Keyboard.release(KEY_DOWN_ARROW);
-    } 
-    
-    if (currentState & NES_LEFT && !(previousState & NES_LEFT)) {
-      Keyboard.press(KEY_1);
-      Keyboard.press(KEY_LEFT_ARROW);
-      Keyboard.release(KEY_1);
-      Keyboard.release(KEY_LEFT_ARROW);
-    } 
-    
-    if (currentState & NES_RIGHT && !(previousState & NES_RIGHT)){
-      Keyboard.press(KEY_1);
-      Keyboard.press(KEY_RIGHT_ARROW);
-      Keyboard.release(KEY_1);
-      Keyboard.release(KEY_RIGHT_ARROW);
-    }
-
-    if((previousState & NES_A) && !(currentState & NES_A))
-      Keyboard.release(0x77);
-    else if(currentState & NES_A) 
-      Keyboard.press(0x77); // W key
-    
-    if((previousState & NES_B) && !(currentState & NES_B))
-      Keyboard.release(0x73);
-    else if(currentState & NES_B)
-      Keyboard.press(0x73); // S key 
-    
-    
-    if((previousState & NES_START) && !(currentState & NES_START))
-      Keyboard.release(KEY_ESC);
-    else if(currentState & NES_START)
-      Keyboard.press(KEY_ESC);
+    // menu navigation
+    XInput.setJoystick(XInputControl::JOY_LEFT, currentState & NES_B, currentState & NES_A, false, false, false);  
+    // emotes
+    XInput.setJoystick(XInputControl::JOY_RIGHT,
+                            currentState & NES_UP && !(previousState & NES_UP), 
+                            currentState & NES_DOWN && !(previousState & NES_DOWN),                   
+                            currentState & NES_LEFT && !(previousState & NES_LEFT), 
+                            currentState & NES_RIGHT && !(previousState & NES_RIGHT),
+                            false);
   }   
 
   return isHandlingInput;
