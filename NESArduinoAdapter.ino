@@ -28,7 +28,6 @@ void setupJoysticks()
 static u8 previousState = 0;
 static u8 currentState = 0;
 
-
 #define NES_A       B00000001
 #define NES_B       B00000010
 #define NES_SELECT  B00000100
@@ -38,21 +37,7 @@ static u8 currentState = 0;
 #define NES_LEFT    B01000000
 #define NES_RIGHT   B10000000
 
-
 #define currentTime micros()
-
-#define KEY_W 0x77
-#define KEY_A 0x97
-#define KEY_S 0x73
-#define KEY_D 0x64
-
-#define KEY_F 0x66
-#define KEY_J 0x6A
-
-#define KEY_X 0x78
-#define KEY_Z 0x7A
-
-#define LINUX
 
 static constexpr u8 xinputMapKeys[8]{
   BUTTON_B,
@@ -67,14 +52,8 @@ static constexpr u8 xinputMapKeys[8]{
 
 struct debounceButton
 {
-#ifdef LINUX  // Note: cdc_acm - HZ/CLK_TICK = 100
   u32 buttonPressedInterval[8]  = {16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000};
   u32 buttonReleasedInterval[8] = {16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000};
-#else
-  u32 buttonPressedInterval[8]  = {16000, 16000, 0, 0, 0, 0, 0, 0};
-  u32 buttonReleasedInterval[8] = {16000, 16000, 0, 0, 0, 0, 0, 0};
-#endif
-
   u32 buttonPressedTimeStamp[8];
   u32 buttonReleasedTimeStamp[8];
 } debounce;
@@ -83,10 +62,10 @@ void setup()
 {
   XInput.begin();
   setupJoysticks();
-  
+
   for(int i = 0; i < 8; i++) {
-    debounce.buttonPressedTimeStamp[i] = micros();
-    debounce.buttonReleasedTimeStamp[i] = micros();
+    debounce.buttonPressedTimeStamp[i] = currentTime;
+    debounce.buttonReleasedTimeStamp[i] = currentTime;
   }
 }
 
@@ -97,12 +76,12 @@ void processInput(u8 currentStates, u8 changedStates)
       if (((currentStates >> i) & 0b00000001)) {
         if (currentTime - debounce.buttonPressedTimeStamp[i] > debounce.buttonPressedInterval[i]) {
           XInput.press(xinputMapKeys[i]);
-          debounce.buttonPressedTimeStamp[i] = micros();
+          debounce.buttonPressedTimeStamp[i] = currentTime;
         }
       }
       else if (currentTime - debounce.buttonReleasedTimeStamp[i] > debounce.buttonReleasedInterval[i]) {
         XInput.release(xinputMapKeys[i]);
-        debounce.buttonReleasedTimeStamp[i] = micros();
+        debounce.buttonReleasedTimeStamp[i] = currentTime;
       }
     }
   } 
@@ -125,13 +104,9 @@ void readController(u8 &state)
   }
 }
 
-static unsigned long previousTime = micros();
+static unsigned long previousTime = currentTime;
 
-constexpr unsigned long pollInterval = 1000;     // 2000 microseconds
-
-#ifdef TEC_DEFAULT
-bool handleTECInput();
-#endif
+constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
 
 void loop() 
 {
@@ -151,28 +126,39 @@ void loop()
   }
 }
 
-
 bool handleTECInput() 
 {
   bool isHandlingInput = false;
   
-  if((previousState & NES_SELECT) && !(currentState & NES_SELECT))   // if select and another button was pressed in the previous input, release all
+    // release all if start or select were released
+  if(((previousState & NES_SELECT) && !(currentState & NES_SELECT)) || (previousState & NES_START) && !(currentState & NES_START))
     XInput.releaseAll();
   else if(currentState & NES_SELECT)
   {
     isHandlingInput = true;
 
-    // playfield zoom -- select + a/b 
-    XInput.setJoystick(XInputControl::JOY_LEFT, currentState & NES_B, currentState & NES_A, false, false, false);  
-    // emotes -- select + directional pad
-    XInput.setJoystick(XInputControl::JOY_RIGHT,
-                            currentState & NES_UP && !(previousState & NES_UP), 
-                            currentState & NES_DOWN && !(previousState & NES_DOWN),                   
-                            currentState & NES_LEFT && !(previousState & NES_LEFT), 
-                            currentState & NES_RIGHT && !(previousState & NES_RIGHT),
-                            false);
+    // send button x or y if select and start are pressed with a/b
+    if(currentState & NES_START) {
+      if(currentState & NES_A && !(previousState & NES_A))
+        XInput.press(XInputControl::BUTTON_X);
+      else if(!(currentState & NES_A) && previousState & NES_A)
+        XInput.release(XInputControl::BUTTON_X);
+      if(currentState & NES_B && !(previousState & NES_B))
+        XInput.press(XInputControl::BUTTON_Y);
+      else if(!(currentState & NES_B) && previousState & NES_B)
+        XInput.release(XInputControl::BUTTON_Y);
+    }else{
+      // playfield zoom -- select + a/b 
+      XInput.setJoystick(XInputControl::JOY_LEFT, currentState & NES_B, currentState & NES_A, false, false, false);  
+      // emotes -- select + directional pad
+      XInput.setJoystick(XInputControl::JOY_RIGHT,
+                              currentState & NES_UP && !(previousState & NES_UP), 
+                              currentState & NES_DOWN && !(previousState & NES_DOWN),                   
+                              currentState & NES_LEFT && !(previousState & NES_LEFT), 
+                              currentState & NES_RIGHT && !(previousState & NES_RIGHT),
+                              false);
+    }
   }   
-
   return isHandlingInput;
 }
 
