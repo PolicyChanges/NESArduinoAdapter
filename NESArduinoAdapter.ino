@@ -4,8 +4,8 @@
 #include <Keyboard.h>
 
 #define TEC_DEFAULT
-///#define PROFILE
-#define PROFILE_BUTTONS
+//#define PROFILE
+//#define PROFILE_BUTTONS
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
 static constexpr u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
@@ -107,7 +107,8 @@ static u8 currentState = 0;
 static u8 previousState = 0;
 // Timestamp of previous interval
 static unsigned long previousTime = currentTime;
-// pollInterval is the interval between reading controller. Set to 400-4000 to minimize bit-bashing (in microseconds)
+// pollInterval is the interval between reading controller. loop() runs at 16MHz
+// so set to 400-4000 to minimize bit-bashing (in microseconds)
 static constexpr unsigned long pollInterval = 2000; 
 
 // Emulator Keys
@@ -142,8 +143,6 @@ static constexpr u8 keyMapKeys[8]{
 };
 #else
 bool isHandlingTECInput() [[force_inline]] { return false; }
-
-static constexpr u8 keyMapKeys[8]{
   KEY_LEFT_ARROW,   // NES Controller A Button
   KEY_RIGHT_ARROW,  // NES Controller B Button
   KEY_F,            // NES Controller Select Button
@@ -156,7 +155,7 @@ static constexpr u8 keyMapKeys[8]{
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-static constexpr u32 buttonPressedInterval[8]  = { 32000, 32000, 0, 0, 0, 32000, 16000, 16000 };
+static constexpr u32 buttonPressedInterval[8]  = { 30000, 30000, 16000, 16000, 16000, 16000, 16000, 16000 };
 static constexpr u32 buttonReleasedInterval[8] = { 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000 };
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
