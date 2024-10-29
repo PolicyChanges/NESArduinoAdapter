@@ -89,7 +89,11 @@ static u32 nBounces[8]             = {0,0,0,0,0,0,0,0};
                         Serial.println(String("ms") +                                                               \
                         " Total: " + String(++nBounces[x]) +                                                        \
                         " Bounces per press: " + String((double)nBounces[x] * 100.0 / (double)(buttonEventID[x]-1)) + "%" + \
+<<<<<<< HEAD
                         " Button: " + String(nameIdx[x])+"******");}      
+=======
+                        " Button: " + String(nameIdx[x]));}      
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
 
 #define reset_button_profile(x) buttonStopTimestamp[x] = buttonStartTimestamp[x] = 0;
 
@@ -115,6 +119,7 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define reset_button_profile(x) buttonStopTimestamp[x] = buttonStartTimestamp[x] = 0;
 #endif 
 
+<<<<<<< HEAD
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 #define latch_low digitalWrite(LATCH, LOW)
@@ -125,6 +130,27 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define wait _delayNanoseconds(1)
 //#define wait delayMicroseconds(12)
 //#define wait2 _delayNanoseconds(6000)
+=======
+// Current state of buttons stored as boolean bits
+static u8 currentState = 0;
+// State of the controller as it was on previous interval.
+static u8 previousState = 0;
+// Timestamp of previous interval
+static unsigned long previousTime = currentTime;
+// pollInterval is the interval between reading controller. loop() runs at 16MHz
+// so set to 500-2000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
+static constexpr unsigned long pollInterval = 1000; 
+
+#define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
+
+#define latch_low digitalWrite(LATCH1, LOW)
+#define latch_high digitalWrite(LATCH1, HIGH)
+#define clock_low digitalWrite(CLOCK1, LOW)
+#define clock_high digitalWrite(CLOCK1, HIGH)
+//#define wait _delayNanoseconds(6000) // 6μs
+#define wait _delayNanoseconds(1)
+//#define wait delayMicroseconds(12)
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
 
 // Emulator Keys
 #define KEY_W 0x77
@@ -157,8 +183,12 @@ static constexpr u8 keyMapKeys[8]{
   KEY_RIGHT_ARROW  // NES Controller Right Button
 };
 #else
+<<<<<<< HEAD
 static bool isHandlingTECInput() [[force_inline]]  { return false; }
 static constexpr u8 keyMapKeys[8] {
+=======
+static bool isHandlingTECInput() [[force_inline]] { return false; }
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
   KEY_LEFT_ARROW,   // NES Controller A Button
   KEY_RIGHT_ARROW,  // NES Controller B Button
   KEY_F,            // NES Controller Select Button
@@ -171,12 +201,19 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
+<<<<<<< HEAD
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 16000, 0, 0, 0, 0 };
+=======
+static constexpr u32 buttonPressedInterval[8]  = { 32000, 32000, 32000, 32000, 0, 0, 0, 0 };
+static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
 static u32 buttonReleasedTimestamp[8];
 void readController();
+
+void readController() [[force_inline]];
 
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
@@ -190,6 +227,7 @@ void setup() {
   for (int i = 0; i < 8; i++) {
     buttonPressedTimestamp[i]  = currentTime;
     buttonReleasedTimestamp[i] = currentTime;
+    readController();
   }
 //#define USE_INTERRUPT 
 #ifdef USE_INTERRUPT
@@ -201,11 +239,16 @@ void setup() {
 void processInput() [[force_inline]] {
   const unsigned long processInputCurrentTimestamp = currentTime;
   const u8 changedStates = currentState ^ previousState;
+<<<<<<< HEAD
   if(changedStates == 0) return;
+=======
+  
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
         if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
+<<<<<<< HEAD
             //u32 pressedDelta = processInputCurrentTimestamp - buttonStartTimestamp[i];
             //if(pressedDelta <= 2000) return;
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
@@ -217,25 +260,37 @@ void processInput() [[force_inline]] {
       else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
         //u32 releaseDelta = processInputCurrentTimestamp - buttonStartTimestamp[i];
         //if(releaseDelta <= 2000) return;
+=======
+          buttonPressedTimestamp[i] = processInputCurrentTimestamp;
+          Keyboard.press(keyMapKeys[i]);
+          isButtonPressed[i] = true;
+          profile_start(i)
+        }
+      } 
+      else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
         buttonReleasedTimestamp[i] = processInputCurrentTimestamp;
         Keyboard.release(keyMapKeys[i]);
         isButtonPressed[i] = false;
         profile_stop(i)        
         print_bounce(i) 
-        profile_print(i)
+        //profile_print(i)
         reset_button_profile(i)
       }
     }
   }
 }
 
+<<<<<<< HEAD
 void readController() {
+=======
+void readController() [[force_inline]] {
+>>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
   latch_low;
   clock_low;
   latch_high;
   wait;
   latch_low;
-
   for (int i = 0; i < 8; i++) {
     currentState |= (!digitalRead(DATA) << i);
     clock_high;
