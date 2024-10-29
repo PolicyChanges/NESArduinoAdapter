@@ -116,7 +116,6 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define reset_button_profile(x) buttonStopTimestamp[x] = buttonStartTimestamp[x] = 0;
 #endif 
 
-<<<<<<< HEAD
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 #define latch_low digitalWrite(LATCH, LOW)
@@ -127,23 +126,9 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define wait _delayNanoseconds(1)
 //#define wait delayMicroseconds(12)
 //#define wait2 _delayNanoseconds(6000)
-=======
-// Current state of buttons stored as boolean bits
-static u8 currentState = 0;
-// State of the controller as it was on previous interval.
-static u8 previousState = 0;
-// Timestamp of previous interval
-static unsigned long previousTime = currentTime;
-// pollInterval is the interval between reading controller. loop() runs at 16MHz
-// so set to 500-2000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 1000; 
 
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
-#define latch_low digitalWrite(LATCH1, LOW)
-#define latch_high digitalWrite(LATCH1, HIGH)
-#define clock_low digitalWrite(CLOCK1, LOW)
-#define clock_high digitalWrite(CLOCK1, HIGH)
 //#define wait _delayNanoseconds(6000) // 6μs
 #define wait _delayNanoseconds(1)
 //#define wait delayMicroseconds(12)
@@ -197,9 +182,6 @@ static constexpr u8 keyMapKeys[8] {
 
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 16000, 0, 0, 0, 0 };
-
-static constexpr u32 buttonPressedInterval[8]  = { 0, 0, 0, 0, 0, 0, 0, 0 };
-static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
