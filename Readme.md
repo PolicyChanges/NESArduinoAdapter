@@ -9,3 +9,6 @@ Mapping:<br />
   KEY_S             // NES Controller Down Button<br />
   KEY_A             // NES Controller Left Button<br />
   KEY_D             // NES Controller Right Button<br />
+
+
+  http://web.mit.edu/tarvizo/web/nes-controller.html
