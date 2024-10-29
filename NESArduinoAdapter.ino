@@ -89,11 +89,8 @@ static u32 nBounces[8]             = {0,0,0,0,0,0,0,0};
                         Serial.println(String("ms") +                                                               \
                         " Total: " + String(++nBounces[x]) +                                                        \
                         " Bounces per press: " + String((double)nBounces[x] * 100.0 / (double)(buttonEventID[x]-1)) + "%" + \
-<<<<<<< HEAD
                         " Button: " + String(nameIdx[x])+"******");}      
-=======
-                        " Button: " + String(nameIdx[x]));}      
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
+
 
 #define reset_button_profile(x) buttonStopTimestamp[x] = buttonStartTimestamp[x] = 0;
 
@@ -150,7 +147,6 @@ static constexpr unsigned long pollInterval = 1000;
 //#define wait _delayNanoseconds(6000) // 6μs
 #define wait _delayNanoseconds(1)
 //#define wait delayMicroseconds(12)
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
 
 // Emulator Keys
 #define KEY_W 0x77
@@ -183,12 +179,9 @@ static constexpr u8 keyMapKeys[8]{
   KEY_RIGHT_ARROW  // NES Controller Right Button
 };
 #else
-<<<<<<< HEAD
-static bool isHandlingTECInput() [[force_inline]]  { return false; }
-static constexpr u8 keyMapKeys[8] {
-=======
+
 static bool isHandlingTECInput() [[force_inline]] { return false; }
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
+static constexpr u8 keyMapKeys[8] {
   KEY_LEFT_ARROW,   // NES Controller A Button
   KEY_RIGHT_ARROW,  // NES Controller B Button
   KEY_F,            // NES Controller Select Button
@@ -201,13 +194,13 @@ static bool isHandlingTECInput() [[force_inline]] { return false; }
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-<<<<<<< HEAD
+
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 16000, 0, 0, 0, 0 };
-=======
-static constexpr u32 buttonPressedInterval[8]  = { 32000, 32000, 32000, 32000, 0, 0, 0, 0 };
+
+static constexpr u32 buttonPressedInterval[8]  = { 0, 0, 0, 0, 0, 0, 0, 0 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
+
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
 static u32 buttonReleasedTimestamp[8];
@@ -239,16 +232,13 @@ void setup() {
 void processInput() [[force_inline]] {
   const unsigned long processInputCurrentTimestamp = currentTime;
   const u8 changedStates = currentState ^ previousState;
-<<<<<<< HEAD
   if(changedStates == 0) return;
-=======
-  
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
+
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
         if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
-<<<<<<< HEAD
+
             //u32 pressedDelta = processInputCurrentTimestamp - buttonStartTimestamp[i];
             //if(pressedDelta <= 2000) return;
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
@@ -258,17 +248,7 @@ void processInput() [[force_inline]] {
         }
       } 
       else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
-        //u32 releaseDelta = processInputCurrentTimestamp - buttonStartTimestamp[i];
-        //if(releaseDelta <= 2000) return;
-=======
-          buttonPressedTimestamp[i] = processInputCurrentTimestamp;
-          Keyboard.press(keyMapKeys[i]);
-          isButtonPressed[i] = true;
-          profile_start(i)
-        }
-      } 
-      else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
+
         buttonReleasedTimestamp[i] = processInputCurrentTimestamp;
         Keyboard.release(keyMapKeys[i]);
         isButtonPressed[i] = false;
@@ -281,11 +261,8 @@ void processInput() [[force_inline]] {
   }
 }
 
-<<<<<<< HEAD
-void readController() {
-=======
+
 void readController() [[force_inline]] {
->>>>>>> 92377cbca8dec3205bab87245a175494f2071ebd
   latch_low;
   clock_low;
   latch_high;
