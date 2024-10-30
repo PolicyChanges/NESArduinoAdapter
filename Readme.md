@@ -12,3 +12,5 @@ Mapping:<br />
 
 
   http://web.mit.edu/tarvizo/web/nes-controller.html
+  http://web.archive.org/web/20041220111455/http://web.mit.edu/tarvizo/web/nes-controller.html
+  https://www.nesdev.org/wiki/4021
