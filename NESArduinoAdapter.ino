@@ -5,7 +5,7 @@
 
 #define TEC_DEFAULT
 //#define PROFILE
-#define PROFILE_BUTTONS
+//#define PROFILE_BUTTONS
 
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH, DATA
@@ -30,7 +30,7 @@ static u8 previousState = 0;
 // Timestamp of previous interval
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
-// so set to 500-2000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
+// so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
 static constexpr unsigned long pollInterval = 2000; 
 
 #define NES_A       B00000001
@@ -216,7 +216,10 @@ void processInput() [[force_inline]] {
         if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
             //u32 pressedDelta = processInputCurrentTimestamp - buttonStartTimestamp[i];
             //if(pressedDelta <= 2000) return;
+start_profile
             Keyboard.press(keyMapKeys[i]);
+end_profile
+print_profile_active
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
             isButtonPressed[i] = true;
             profile_start(i)
@@ -228,7 +231,7 @@ void processInput() [[force_inline]] {
         isButtonPressed[i] = false;
         profile_stop(i)        
         print_bounce(i) 
-        //profile_print(i)
+        profile_print(i)
         reset_button_profile(i)
       }
     }
@@ -288,7 +291,7 @@ void loop() {
   currentState = 0;
   const unsigned long currentLoopTimestamp = currentTime;
   if (currentLoopTimestamp - previousTime >= pollInterval) {
-start_profile
+
     readController();
 
     if (isHandlingTECInput() == false) [[likely]] {
@@ -296,8 +299,7 @@ start_profile
     }
     previousTime = currentLoopTimestamp;
     previousState = currentState;
-end_profile
-print_profile_active
+
   }
 }
 
