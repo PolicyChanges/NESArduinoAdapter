@@ -58,14 +58,14 @@ static bool isButtonPressed[8] = {0,0,0,0,0,0,0,0};
   #define end_profile           profileEndTimestamp = currentTime;
   #define profile_delta_active  (profileEndTimestamp - profileStartTimestamp)
   #define print_delta_sum       Serial.println("Delta Sum: " + String(total_delta));
-  #define print_profile_active  if ((currentTime - previousPrint) > printInterval) [[unlikely]] {                                     \
-                                Serial.println("Profiler Delta: " + String(profile_delta_active) + "μs");                             \
+  #define print_profile_active(x)  if ((currentTime - previousPrint) > printInterval) [[unlikely]] {                                     \
+                                Serial.println("Profiler Delta: " + String(profile_delta_active) + "μs Loop delta: " + String(x));                             \
                                 previousPrint = currentTime;}//print_delta_sum}
 
 #else
   #define start_profile
   #define end_profile
-  #define print_profile_active
+  #define print_profile_active(x)
 #endif 
 
 #ifdef PROFILE_BUTTONS
@@ -125,8 +125,8 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 //#define wait _delayNanoseconds(6000) // 6μs
-#define wait _delayNanoseconds(1)
-//#define wait delayMicroseconds(12)
+//#define wait _delayNanoseconds(1)
+#define wait delayMicroseconds(12)
 
 // Emulator Keys
 #define KEY_W 0x77
@@ -175,7 +175,7 @@ static constexpr u8 keyMapKeys[8] {
 
 // Debounce Interverals Per Button
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
-static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 16000, 0, 0, 0, 0 };
+static constexpr u32 buttonReleasedInterval[8] = { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 };
 
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
@@ -186,7 +186,7 @@ void readController() [[force_inline]];
 
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
-  Serial.begin(115200);
+  Serial.begin(1000000);
 #endif
 
   Keyboard.begin();
@@ -196,7 +196,6 @@ void setup() {
   for (int i = 0; i < 8; i++) {
     buttonPressedTimestamp[i]  = currentTime;
     buttonReleasedTimestamp[i] = currentTime;
-    readController();
   }
 //#define USE_INTERRUPT 
 #ifdef USE_INTERRUPT
@@ -214,12 +213,7 @@ void processInput() [[force_inline]] {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
         if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
-            //u32 pressedDelta = processInputCurrentTimestamp - buttonStartTimestamp[i];
-            //if(pressedDelta <= 2000) return;
-start_profile
             Keyboard.press(keyMapKeys[i]);
-end_profile
-print_profile_active
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
             isButtonPressed[i] = true;
             profile_start(i)
@@ -238,7 +232,6 @@ print_profile_active
   }
 }
 
-
 void readController() [[force_inline]] {
   latch_low;
   clock_low;
@@ -254,56 +247,24 @@ void readController() [[force_inline]] {
   }
 }
 
-#ifdef USE_INTERRUPT
-static unsigned long long buttonEventIDRaw = 6;
-static u8 buttonStateRaw = 0;
-void readARaw() {
-  buttonStateRaw |= (!digitalRead(DATA) << (buttonEventIDRaw%8));
-  buttonEventIDRaw++;
-}
-void readControllerRaw() {
-    buttonStateRaw |= (!digitalRead(DATA) << (buttonEventIDRaw%8));
-  buttonEventIDRaw++;
-}
 void loop() {
-  const unsigned long currentLoopTimestamp = currentTime;
-  if (currentLoopTimestamp - previousTime >= 16000) {
-    latch_high;
-    wait;
-    latch_low;
-    for (int i = 1; i < 8; i++) {
-      clock_high;
-      wait;
-      clock_low;
-      wait;
-    }
-    previousTime = currentLoopTimestamp;
-    currentState = buttonStateRaw;
-    if(currentState != previousState) 
-      processInput();
-    previousState = buttonStateRaw;
-    buttonStateRaw = 0x00;
-  }
-}
-#else
-
-void loop() {
+    start_profile
   currentState = 0;
   const unsigned long currentLoopTimestamp = currentTime;
   if (currentLoopTimestamp - previousTime >= pollInterval) {
+
 
     readController();
 
     if (isHandlingTECInput() == false) [[likely]] {
       processInput();
     }
+end_profile
+print_profile_active(currentLoopTimestamp - previousTime)
     previousTime = currentLoopTimestamp;
     previousState = currentState;
-
   }
 }
-
-#endif
 
 #ifdef TEC_DEFAULT
 bool isHandlingTECInput() [[force_inline]] {
