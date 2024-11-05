@@ -31,7 +31,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 2000; 
+static constexpr unsigned long pollInterval = 1000; 
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -175,7 +175,7 @@ static constexpr u8 keyMapKeys[8] {
 
 // Debounce Interverals Per Button
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
-static constexpr u32 buttonReleasedInterval[8] = { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 };
+static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
