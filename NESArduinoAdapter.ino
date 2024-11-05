@@ -5,7 +5,7 @@
 
 #define TEC_DEFAULT
 //#define PROFILE
-//#define PROFILE_BUTTONS
+#define PROFILE_BUTTONS
 
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH, DATA
@@ -289,7 +289,7 @@ void loop() {
 #define BITBASH
 #ifdef BITBASH
 static float normalizedSamples[8] = {0,0,0,0,0,0,0,0};
-
+/*
 static void processBitBashedInput() [[force_inline]] {
   currentState = 0;
   for(int i = 0; i < 8; i++)
@@ -298,7 +298,7 @@ static void processBitBashedInput() [[force_inline]] {
       currentState |= (1 << i);
   }
 }
-
+*/
 static void bitBashSample() [[force_inline]] {
  
   float inputSamples[6][8]= {{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
@@ -324,6 +324,8 @@ static void bitBashSample() [[force_inline]] {
   // Normalize samples
   for(i = 0; i < 8; i++) 
     normalizedSamples[i] = sumOfSamples[i] / nSamples;
+    if(normalizedSamples[i] > .6)
+      currentState |= (1 << i);
 }
 #endif
 
@@ -333,7 +335,7 @@ start_profile
 
 #ifdef BITBASH
   bitBashSample();
-  processBitBashedInput();
+  //processBitBashedInput();
 #else
   const unsigned long currentLoopTimestamp = currentTime;
   if (currentLoopTimestamp - previousTime >= pollInterval) {
