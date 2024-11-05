@@ -31,7 +31,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 2000; 
+static constexpr unsigned long pollInterval = 0; 
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -175,7 +175,7 @@ static constexpr u8 keyMapKeys[8] {
 
 // Debounce Interverals Per Button
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
-static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 16000, 0, 0, 0, 0 };
+static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 8000, 0, 0, 0, 0 };
 
 // User Input Timestamps
 static u32 buttonPressedTimestamp[8];
@@ -186,7 +186,7 @@ void readController() [[force_inline]];
 
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
-  Serial.begin(115200);
+  Serial.begin(1000000);
 #endif
 
   Keyboard.begin();
@@ -196,7 +196,6 @@ void setup() {
   for (int i = 0; i < 8; i++) {
     buttonPressedTimestamp[i]  = currentTime;
     buttonReleasedTimestamp[i] = currentTime;
-    readController();
   }
 //#define USE_INTERRUPT 
 #ifdef USE_INTERRUPT
@@ -220,14 +219,14 @@ start_profile
             Keyboard.press(keyMapKeys[i]);
 end_profile
 print_profile_active
-            buttonPressedTimestamp[i] = processInputCurrentTimestamp;
+            buttonPressedTimestamp[i] = currentTime;
             isButtonPressed[i] = true;
             profile_start(i)
         }
       } 
       else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
         Keyboard.release(keyMapKeys[i]);
-        buttonReleasedTimestamp[i] = processInputCurrentTimestamp;
+        buttonReleasedTimestamp[i] = currentTime;
         isButtonPressed[i] = false;
         profile_stop(i)        
         print_bounce(i) 
@@ -287,20 +286,68 @@ void loop() {
 }
 #else
 
-void loop() {
+float normalizedSamples[8] = {0,0,0,0,0,0,0,0};
+
+static void processBitBashedInput() [[force_inline]] {
   currentState = 0;
-  const unsigned long currentLoopTimestamp = currentTime;
-  if (currentLoopTimestamp - previousTime >= pollInterval) {
+  for(int i = 0; i < 8; i++)
+  {
+    if(normalizedSamples[i] > .6)
+      currentState |= (1 << i);
+  }
+}
 
+static void bitBashSample() [[force_inline]] {
+ 
+  float inputSamples[6][8]= {{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0},{0,0,0,0,0,0,0,0}};
+  float sumOfSamples[8] = {0,0,0,0,0,0,0,0};
+  constexpr float nSamples = 4.0;
+  u8 roundedSamples = 0;
+  int i = 0;
+  int j = 0;
+  // Gather input data
+  for(i = 0; i < nSamples; i++) {
+    currentState = 0;
     readController();
-
-    if (isHandlingTECInput() == false) [[likely]] {
-      processInput();
+    for(j = 0; j < 8; j++) {
+      u8 sample = ((currentState >> j) & 0b00000001);
+      inputSamples[i][j] += (float)sample;
     }
-    previousTime = currentLoopTimestamp;
+  }
+  // Sum Samples
+  for(i = 0; i < nSamples; i++) {
+    for(j = 0; j < 8; j++) {
+      sumOfSamples[j] += inputSamples[i][j];
+    }
+  }
+  // Normalize samples
+  for(i = 0; i < 8; i++) 
+    normalizedSamples[i] = sumOfSamples[i] / nSamples;
+}
+
+
+void loop() {
+start_profile
+  currentState = 0;
+ // const unsigned long currentLoopTimestamp = currentTime;
+ // if (currentLoopTimestamp - previousTime >= pollInterval) {
+    bitBashSample();
+    processBitBashedInput();
+    //readController();
+    
+#ifdef TEC_DEFAULT
+    if (isHandlingTECInput() == false) [[likely]] {
+#endif      
+      processInput();
+#ifdef TEC_DEFAULT    
+    }
+#endif
+//    previousTime = currentLoopTimestamp;
     previousState = currentState;
 
-  }
+  //}
+end_profile
+print_profile_active
 }
 
 #endif
