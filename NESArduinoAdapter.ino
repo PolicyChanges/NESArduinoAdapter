@@ -1,29 +1,28 @@
-#pragma GCC optimize("O3")
+#pragma GCC optimize("Ofast")
 #pragma GCC push_options
-
 #include <XInput.h>
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH,     DATA
 constexpr u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
 
-#define CLOCK1 inputPinsPort1[0]
-#define LATCH1 inputPinsPort1[1]
-#define DATA1 inputPinsPort1[2]
+#define CLOCK inputPinsPort1[0]
+#define LATCH inputPinsPort1[1]
+#define DATA inputPinsPort1[2]
 
 void setupJoysticks()
 {
-  pinMode(LATCH1, OUTPUT);
-  pinMode(CLOCK1, OUTPUT);
-  pinMode(DATA1, INPUT_PULLUP);
+  pinMode(LATCH, OUTPUT);
+  pinMode(CLOCK, OUTPUT);
+  pinMode(DATA, INPUT_PULLUP);
 }
 
-#define latch_low digitalWrite(LATCH1, LOW)
-#define latch_high digitalWrite(LATCH1, HIGH)
-#define clock_low digitalWrite(CLOCK1, LOW)
-#define clock_high digitalWrite(CLOCK1, HIGH)
+#define latch_low digitalWrite(LATCH, LOW)
+#define latch_high digitalWrite(LATCH, HIGH)
+#define clock_low digitalWrite(CLOCK, LOW)
+#define clock_high digitalWrite(CLOCK, HIGH)
+
 #define wait delayMicroseconds(12)
-#define waitfullread delayMicroseconds(240)
-#define waitread delayMicroseconds(36)
+
 
 static u8 previousState = 0;
 static u8 currentState = 0;
@@ -52,14 +51,15 @@ static constexpr u8 xinputMapKeys[8]{
 
 struct debounceButton
 {
-  u32 buttonPressedInterval[8]  = {16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000};
-  u32 buttonReleasedInterval[8] = {16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000};
+  u32 buttonPressedInterval[8]  = {31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992};
+  u32 buttonReleasedInterval[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   u32 buttonPressedTimeStamp[8];
   u32 buttonReleasedTimeStamp[8];
 } debounce;
 
 void setup() 
 {
+  //Serial.begin(1000000);
   XInput.begin();
   setupJoysticks();
 
@@ -71,15 +71,16 @@ void setup()
 
 void processInput(u8 currentStates, u8 changedStates) 
 {
+  const unsigned long inputCurrentTime = currentTime;
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentStates >> i) & 0b00000001)) {
-        if (currentTime - debounce.buttonPressedTimeStamp[i] > debounce.buttonPressedInterval[i]) {
+        if (inputCurrentTime - debounce.buttonPressedTimeStamp[i] > debounce.buttonPressedInterval[i]) {
           XInput.press(xinputMapKeys[i]);
           debounce.buttonPressedTimeStamp[i] = currentTime;
         }
       }
-      else if (currentTime - debounce.buttonReleasedTimeStamp[i] > debounce.buttonReleasedInterval[i]) {
+      else if (inputCurrentTime - debounce.buttonReleasedTimeStamp[i] > debounce.buttonReleasedInterval[i]) {
         XInput.release(xinputMapKeys[i]);
         debounce.buttonReleasedTimeStamp[i] = currentTime;
       }
@@ -96,7 +97,7 @@ void readController(u8 &state)
   latch_low;
 
   for (int i = 0; i < 8; i++) {
-    state |= (!digitalRead(DATA1) << i);
+    state |= (!digitalRead(DATA) << i);
     clock_high;
     wait;
     clock_low;
@@ -111,7 +112,7 @@ constexpr unsigned long pollInterval = 2000;     // 2000 microseconds
 void loop() 
 {
   currentState = 0;
-
+  
   if (currentTime - previousTime > pollInterval) {
    
     readController(currentState);
@@ -121,6 +122,8 @@ void loop()
     if(handleTECInput() == false)
       processInput(currentState, previousState);
 
+    //if(previousState != currentState)
+    //  Serial.println("State: "  + String(currentState));
     previousState = currentState;
     previousTime = currentTime;
   }
