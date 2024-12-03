@@ -33,6 +33,7 @@ static unsigned long previousTime = currentTime;
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
 static constexpr unsigned long pollInterval = 992; 
 
+
 #define NES_A       B00000001
 #define NES_B       B00000010
 #define NES_SELECT  B00000100
@@ -186,7 +187,7 @@ void readController() [[force_inline]];
 
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
-//  Serial.begin(1000000);
+  Serial.begin(2000000);
 #endif
 
   Keyboard.begin();
@@ -251,9 +252,7 @@ void loop() {
 start_profile
   currentState = 0;
   unsigned long currentLoopTimestamp = currentTime;
-
   if (currentLoopTimestamp - previousTime >= pollInterval) {
-
     if(currentLoopTimestamp - previousTime <= 996)
       _delayNanoseconds(4000);
 end_profile
@@ -262,10 +261,8 @@ print_profile_active(currentLoopTimestamp - previousTime)
     if (isHandlingTECInput() == false) [[likely]] {
       processInput();
     }
-
     previousState = currentState;
-
-previousTime = currentLoopTimestamp;
+	previousTime = currentLoopTimestamp;
   }
 }
 
