@@ -5,7 +5,7 @@
 
 #define TEC_DEFAULT
 
-#define PROFILE
+//#define PROFILE
 #define PROFILE_BUTTONS
 
 
@@ -84,24 +84,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-static constexpr unsigned long pollInterval = 992; 
-
-=======
 static constexpr unsigned long pollInterval = 1000; 
->>>>>>> 45d5258 (add botton by stats--much better)
-=======
-=======
->>>>>>> fb1bf03 (fix git)
-static constexpr unsigned long pollInterval = 1000; 
-
-<<<<<<< HEAD
->>>>>>> refs/remotes/origin/main
->>>>>>> c3bd50f (broken)
-=======
->>>>>>> fb1bf03 (fix git)
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -116,12 +99,12 @@ static constexpr unsigned long pollInterval = 1000;
 
 #ifdef PROFILE
   static unsigned long total_delta = 0;
-  static unsigned long printInterval = 1000000;
-  static unsigned long previousPrint = currentTime;
-  static unsigned long min_d = 1000000000;
-  static unsigned long max_d = 0;
-  static unsigned long profileStartTimestamp = currentTime;
-  static unsigned long profileEndTimestamp = currentTime;
+  static u32 printInterval = 1000000;
+  static u32 previousPrint = currentTime;
+  static u32 min_d = 1000000000;
+  static u32 max_d = 0;
+  static u32 profileStartTimestamp = currentTime;
+  static u32 profileEndTimestamp = currentTime;
 
   #define start_profile()       profileStartTimestamp = currentTime;
   #define end_profile()         profileEndTimestamp = currentTime;
@@ -195,32 +178,10 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define clock_low digitalWrite(CLOCK, LOW)
 #define clock_high digitalWrite(CLOCK, HIGH)
 
-#define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/(double)16/1.0e9 )
+#define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-#define wait _delayNanoseconds(4000)
-#define wait4ms _delayNanoseconds(3950)
-#define wait8ms _delayNanoseconds(7950)
-=======
 //#define wait _delayNanoseconds(6000) // 6μs
 #define wait _delayNanoseconds(1)
->>>>>>> 45d5258 (add botton by stats--much better)
-=======
-//#define wait _delayNanoseconds(6000) // 6μs
-#define wait _delayNanoseconds(1)
-=======
-#define wait _delayNanoseconds(4000)
-#define wait4ms _delayNanoseconds(3950)
-#define wait8ms _delayNanoseconds(7950)
->>>>>>> refs/remotes/origin/main
->>>>>>> c3bd50f (broken)
-=======
-//#define wait _delayNanoseconds(6000) // 6μs
-#define wait _delayNanoseconds(1)
-
->>>>>>> fb1bf03 (fix git)
 //#define wait delayMicroseconds(12)
 
 // Emulator Keys
@@ -269,20 +230,6 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-static constexpr u32 buttonPressedInterval[8]  = { 31996, 31996, 31996, 31996, 31996, 31996, 31996, 31996 };
-static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-// User Input Timestamps
-static u32 buttonPressedTimestamp[8];
-static u32 buttonReleasedTimestamp[8];
-=======
-=======
->>>>>>> c3bd50f (broken)
-=======
->>>>>>> fb1bf03 (fix git)
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -290,24 +237,9 @@ static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned long long buttonPressedTimestamp[8];
 static unsigned long long buttonReleasedTimestamp[8];
 
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 45d5258 (add botton by stats--much better)
-=======
-=======
-static constexpr u32 buttonPressedInterval[8]  = { 31996, 31996, 31996, 31996, 31996, 31996, 31996, 31996 };
-static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-// User Input Timestamps
-static u32 buttonPressedTimestamp[8];
-static u32 buttonReleasedTimestamp[8];
->>>>>>> refs/remotes/origin/main
->>>>>>> c3bd50f (broken)
 
 void readController() [[force_inline]];
 
-=======
->>>>>>> fb1bf03 (fix git)
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
   Serial.begin(2000000);
@@ -329,75 +261,23 @@ void setup() {
 #endif
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-void processInput() [[force_inline]] {
-  unsigned long processInputCurrentTimestamp = currentTime;
-  u8 changedStates = currentState ^ previousState;
-  if(changedStates == 0) return;
-=======
 void processInput(u8 currentState) {
   const unsigned long processInputCurrentTimestamp = currentTime;
   const u8 changedStates = currentState ^ previousState;
->>>>>>> 45d5258 (add botton by stats--much better)
-=======
-void processInput(u8 currentState) {
-  const unsigned long processInputCurrentTimestamp = currentTime;
-  const u8 changedStates = currentState ^ previousState;
-=======
-void processInput() [[force_inline]] {
-  unsigned long processInputCurrentTimestamp = currentTime;
-  u8 changedStates = currentState ^ previousState;
-  if(changedStates == 0) return;
->>>>>>> refs/remotes/origin/main
->>>>>>> c3bd50f (broken)
-=======
-void processInput(u8 currentState) {
-  const unsigned long processInputCurrentTimestamp = currentTime;
-  const u8 changedStates = currentState ^ previousState;
->>>>>>> fb1bf03 (fix git)
 
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
-        if (processInputCurrentTimestamp - buttonPressedTimestamp[i] >= buttonPressedInterval[i]) {
+        if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
             Keyboard.press(keyMapKeys[i]);
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-            //isButtonPressed[i] = true;
-            profile_start(i)
-        }
-      } 
-      else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] >= buttonReleasedInterval[i]) {
-=======
-=======
->>>>>>> c3bd50f (broken)
-=======
->>>>>>> fb1bf03 (fix git)
             profile_start(i)
         }
       } 
       /*else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 45d5258 (add botton by stats--much better)
-=======
-=======
-            //isButtonPressed[i] = true;
-            profile_start(i)
-        }
-      } 
-      else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] >= buttonReleasedInterval[i]) {
->>>>>>> refs/remotes/origin/main
->>>>>>> c3bd50f (broken)
-=======
->>>>>>> fb1bf03 (fix git)
         Keyboard.release(keyMapKeys[i]);
         buttonReleasedTimestamp[i] = processInputCurrentTimestamp;
-        //isButtonPressed[i] = false;
+        isButtonPressed[i] = false;
         profile_stop(i)        
         print_bounce(i) 
         profile_print(i)
@@ -430,26 +310,6 @@ void readController(u8 *currentState) {
 }
 
 void loop() {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-start_profile
-  currentState = 0;
-  unsigned long currentLoopTimestamp = currentTime;
-  if (currentLoopTimestamp - previousTime >= pollInterval) {
-    if(currentLoopTimestamp - previousTime <= 996)
-      _delayNanoseconds(4000);
-end_profile
-print_profile_active(currentLoopTimestamp - previousTime)     
-    readController();  //inside if prevents bitbash
-    if (isHandlingTECInput() == false) [[likely]] {
-      processInput();
-    }
-=======
-=======
->>>>>>> c3bd50f (broken)
-=======
->>>>>>> fb1bf03 (fix git)
 start_profile()
   u8 currentState = 0;
   const unsigned long currentLoopTimestamp = currentTime;
@@ -460,39 +320,17 @@ start_profile()
       Stats::addSample(currentState);
     }
     Stats::reset();
-    if (isHandlingTECInput(currentState) == false) [[likely]] {
+    //if (isHandlingTECInput(currentState) == false) [[likely]] {
       processInput(currentState);
-    }
+    //}
 end_profile()
 print_profile_active(currentLoopTimestamp - previousTime)
     previousTime = currentLoopTimestamp;
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 45d5258 (add botton by stats--much better)
-=======
-=======
-start_profile
-  currentState = 0;
-  unsigned long currentLoopTimestamp = currentTime;
-  if (currentLoopTimestamp - previousTime >= pollInterval) {
-    if(currentLoopTimestamp - previousTime <= 996)
-      _delayNanoseconds(4000);
-end_profile
-print_profile_active(currentLoopTimestamp - previousTime)     
-    readController();  //inside if prevents bitbash
-    if (isHandlingTECInput() == false) [[likely]] {
-      processInput();
-    }
->>>>>>> refs/remotes/origin/main
->>>>>>> c3bd50f (broken)
-=======
->>>>>>> fb1bf03 (fix git)
     previousState = currentState;
-	previousTime = currentLoopTimestamp;
   }
 }
 
-#ifdef TEC_DEFAULT
+#ifdef asdf/// TEC_DEFAULT
 bool isHandlingTECInput(u8 state) {
   bool isHandlingInput = false;
   
