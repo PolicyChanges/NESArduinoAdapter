@@ -4,14 +4,12 @@
 #include <Keyboard.h>
 
 #define TEC_DEFAULT
-
-//#define PROFILE
+#define PROFILE
 //#define PROFILE_BUTTONS
-
 
 namespace Stats 
 {
-  constexpr u8 nSamples = 8;
+  constexpr u8 nSamples = 4;
   
   static u8 index = 0;
   static u8 samples[nSamples];
@@ -25,27 +23,27 @@ namespace Stats
   static u8 averageSamples() {
     float sum[8];
     u8 lbuttonState = 0;
-    memcpy(sum, 0, sizeof(sum));
-    
-
+    memcpy(sum,0,sizeof(sum));
     for(u8 i = 0; i < 8; i++){
       for(u8 j = 0; j < nSamples; j++){
         sum[i] += (float)((samples[j] >> i)  & 0b00000001);
       }
       lbuttonState |= (u8)((u8)roundf(sum[i]/(float)nSamples) << i);
     }      
+    buttonState = lbuttonState;
+    //Serial.println("Button state: " + String(lbuttonState));
     samplerRunning = false;
   }
   
   static void reset() {
-        
     memcpy(samples, 0, sizeof(samples));
     buttonState = 0;
     samplerRunning = true;
   }
   
   static u8 increment() {
-    if(++index >= nSamples) {
+    index++;
+    if(index >= nSamples) {
       index = 0;
       averageSamples();
     }
@@ -55,7 +53,6 @@ namespace Stats
   static void addSample(u8 state)
   {
     samples[index] = state;
-    //Serial.println("Sample: " + String(state));
     increment();
   }
 
@@ -210,7 +207,7 @@ bool isHandlingTECInput() [[force_inline]];
 static constexpr u8 keyMapKeys[8]{
   KEY_X,           // NES Controller A Button
   KEY_Z,           // NES Controller B Button
-  KEY_ESC,//0x0,             // NES Controller Select Button
+  0x0,             // NES Controller Select Button
   KEY_RETURN,      // NES Controller Enter Button
   KEY_UP_ARROW,    // NES Controller Up Button
   KEY_DOWN_ARROW,  // NES Controller Down Button
@@ -319,13 +316,15 @@ start_profile()
   if (currentLoopTimestamp - previousTime >= pollInterval)
   {
     while(Stats::isSampling()) {
-      readController(&currentState);
-      Stats::addSample(currentState);
+      u8 sampleState = 0;
+      readController(&sampleState);
+      Stats::addSample(sampleState);
     }
-    Stats::reset();
-    //if (isHandlingTECInput(currentState) == false) [[likely]] {
+    currentState = Stats::buttonState;  //not assigning works unreasonbaly well...
+   
+    if (isHandlingTECInput(currentState) == false) [[likely]] {
       processInput(currentState);
-    //}
+    } Stats::reset();
 end_profile()
 print_profile_active(currentLoopTimestamp - previousTime)
     previousTime = currentLoopTimestamp;
@@ -333,7 +332,7 @@ print_profile_active(currentLoopTimestamp - previousTime)
   }
 }
 
-#ifdef asdf/// TEC_DEFAULT
+#ifdef TEC_DEFAULT
 bool isHandlingTECInput(u8 state) {
   bool isHandlingInput = false;
   
