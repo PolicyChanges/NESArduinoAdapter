@@ -6,7 +6,7 @@
 #define TEC_DEFAULT
 
 //#define PROFILE
-#define PROFILE_BUTTONS
+//#define PROFILE_BUTTONS
 
 
 namespace Stats 
@@ -160,6 +160,9 @@ static u32 nBounces[8]             = {0,0,0,0,0,0,0,0};
                                   buttonStopTimestamp[x] = currentTime;                                             \
                                   Serial.println(profile_delta(x) + "ms");}
 #else
+// Button states (used for profiling)
+static bool isButtonPressed[8] = {0,0,0,0,0,0,0,0};
+
 static u32 buttonStartTimestamp[8] = {0,0,0,0,0,0,0,0};
 static u32 buttonStopTimestamp[8]  = {0,0,0,0,0,0,0,0};
 static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
