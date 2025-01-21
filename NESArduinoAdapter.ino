@@ -5,7 +5,7 @@
 
 #define TEC_DEFAULT
 
-//#define PROFILE
+#define PROFILE
 #define PROFILE_BUTTONS
 
 
@@ -86,18 +86,22 @@ static unsigned long previousTime = currentTime;
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 static constexpr unsigned long pollInterval = 992; 
 
 =======
 static constexpr unsigned long pollInterval = 1000; 
 >>>>>>> 45d5258 (add botton by stats--much better)
 =======
-static constexpr unsigned long pollInterval = 1000; 
 =======
-static constexpr unsigned long pollInterval = 992; 
+>>>>>>> fb1bf03 (fix git)
+static constexpr unsigned long pollInterval = 1000; 
 
+<<<<<<< HEAD
 >>>>>>> refs/remotes/origin/main
 >>>>>>> c3bd50f (broken)
+=======
+>>>>>>> fb1bf03 (fix git)
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -195,6 +199,7 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define wait _delayNanoseconds(4000)
 #define wait4ms _delayNanoseconds(3950)
 #define wait8ms _delayNanoseconds(7950)
@@ -211,6 +216,11 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define wait8ms _delayNanoseconds(7950)
 >>>>>>> refs/remotes/origin/main
 >>>>>>> c3bd50f (broken)
+=======
+//#define wait _delayNanoseconds(6000) // 6μs
+#define wait _delayNanoseconds(1)
+
+>>>>>>> fb1bf03 (fix git)
 //#define wait delayMicroseconds(12)
 
 // Emulator Keys
@@ -261,6 +271,7 @@ static constexpr u8 keyMapKeys[8] {
 // Debounce Interverals Per Button
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 static constexpr u32 buttonPressedInterval[8]  = { 31996, 31996, 31996, 31996, 31996, 31996, 31996, 31996 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -270,6 +281,8 @@ static u32 buttonReleasedTimestamp[8];
 =======
 =======
 >>>>>>> c3bd50f (broken)
+=======
+>>>>>>> fb1bf03 (fix git)
 static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
@@ -277,6 +290,7 @@ static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 static unsigned long long buttonPressedTimestamp[8];
 static unsigned long long buttonReleasedTimestamp[8];
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 45d5258 (add botton by stats--much better)
 =======
@@ -292,6 +306,8 @@ static u32 buttonReleasedTimestamp[8];
 
 void readController() [[force_inline]];
 
+=======
+>>>>>>> fb1bf03 (fix git)
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
   Serial.begin(2000000);
@@ -315,6 +331,7 @@ void setup() {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 void processInput() [[force_inline]] {
   unsigned long processInputCurrentTimestamp = currentTime;
   u8 changedStates = currentState ^ previousState;
@@ -335,6 +352,11 @@ void processInput() [[force_inline]] {
   if(changedStates == 0) return;
 >>>>>>> refs/remotes/origin/main
 >>>>>>> c3bd50f (broken)
+=======
+void processInput(u8 currentState) {
+  const unsigned long processInputCurrentTimestamp = currentTime;
+  const u8 changedStates = currentState ^ previousState;
+>>>>>>> fb1bf03 (fix git)
 
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
@@ -344,6 +366,7 @@ void processInput() [[force_inline]] {
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             //isButtonPressed[i] = true;
             profile_start(i)
         }
@@ -352,10 +375,13 @@ void processInput() [[force_inline]] {
 =======
 =======
 >>>>>>> c3bd50f (broken)
+=======
+>>>>>>> fb1bf03 (fix git)
             profile_start(i)
         }
       } 
       /*else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 45d5258 (add botton by stats--much better)
 =======
@@ -367,6 +393,8 @@ void processInput() [[force_inline]] {
       else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] >= buttonReleasedInterval[i]) {
 >>>>>>> refs/remotes/origin/main
 >>>>>>> c3bd50f (broken)
+=======
+>>>>>>> fb1bf03 (fix git)
         Keyboard.release(keyMapKeys[i]);
         buttonReleasedTimestamp[i] = processInputCurrentTimestamp;
         //isButtonPressed[i] = false;
@@ -404,6 +432,7 @@ void readController(u8 *currentState) {
 void loop() {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 start_profile
   currentState = 0;
   unsigned long currentLoopTimestamp = currentTime;
@@ -419,6 +448,8 @@ print_profile_active(currentLoopTimestamp - previousTime)
 =======
 =======
 >>>>>>> c3bd50f (broken)
+=======
+>>>>>>> fb1bf03 (fix git)
 start_profile()
   u8 currentState = 0;
   const unsigned long currentLoopTimestamp = currentTime;
@@ -429,12 +460,13 @@ start_profile()
       Stats::addSample(currentState);
     }
     Stats::reset();
-    //if (isHandlingTECInput(currentState) == false) [[likely]] {
+    if (isHandlingTECInput(currentState) == false) [[likely]] {
       processInput(currentState);
-    //}
+    }
 end_profile()
 print_profile_active(currentLoopTimestamp - previousTime)
     previousTime = currentLoopTimestamp;
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 45d5258 (add botton by stats--much better)
 =======
@@ -453,12 +485,14 @@ print_profile_active(currentLoopTimestamp - previousTime)
     }
 >>>>>>> refs/remotes/origin/main
 >>>>>>> c3bd50f (broken)
+=======
+>>>>>>> fb1bf03 (fix git)
     previousState = currentState;
 	previousTime = currentLoopTimestamp;
   }
 }
 
-#ifdef asdf/// TEC_DEFAULT
+#ifdef TEC_DEFAULT
 bool isHandlingTECInput(u8 state) {
   bool isHandlingInput = false;
   
