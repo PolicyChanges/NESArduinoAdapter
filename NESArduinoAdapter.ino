@@ -9,39 +9,41 @@
 
 namespace Stats 
 {
-  constexpr u8 nSamples = 4;
-  
+  constexpr u8 nSamples = 10;
   static u8 index = 0;
   static u8 samples[nSamples];
   static u8 buttonState = 0;
   static bool samplerRunning = true;
-  
-  static bool isSampling() {
+
+  static bool isSampling() 
+  {
     return samplerRunning;
   }
-  
-  static u8 averageSamples() {
+  static u8 getButtonState()
+  {
+    return buttonState;
+  }
+  static u8 averageSamples() 
+  {
     float sum[8];
-    u8 lbuttonState = 0;
-    memcpy(sum,0,sizeof(sum));
+    buttonState = 0;
+    memcpy(sum, 0,sizeof(sum));
     for(u8 i = 0; i < 8; i++){
       for(u8 j = 0; j < nSamples; j++){
-        sum[i] += (float)((samples[j] >> i)  & 0b00000001);
+        sum[i] += (float)((samples[j] >> i) & 0b00000001);
       }
-      lbuttonState |= (u8)((u8)roundf(sum[i]/(float)nSamples) << i);
+      buttonState |= ((u8)roundf(sum[i]/(float)nSamples) << i);
     }      
-    buttonState = lbuttonState;
-    //Serial.println("Button state: " + String(lbuttonState));
     samplerRunning = false;
   }
-  
-  static void reset() {
+  static void reset() 
+  {
     memcpy(samples, 0, sizeof(samples));
     buttonState = 0;
     samplerRunning = true;
   }
-  
-  static u8 increment() {
+  static u8 increment() 
+  {
     index++;
     if(index >= nSamples) {
       index = 0;
@@ -49,13 +51,11 @@ namespace Stats
     }
     return index;
   }
-  
   static void addSample(u8 state)
   {
     samples[index] = state;
     increment();
   }
-
 };
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH, DATA
@@ -81,7 +81,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 1000; 
+static constexpr unsigned long pollInterval = 2000; 
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -230,7 +230,7 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
+static constexpr u32 buttonPressedInterval[8]  = { 16000, 16000, 0, 0, 0, 0, 0, 0 };//{ 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // User Input Timestamps
@@ -268,11 +268,11 @@ void processInput(u8 currentState) {
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
-        if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
+        //if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
             Keyboard.press(keyMapKeys[i]);
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
             profile_start(i)
-        }
+        //}
       } 
       /*else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
         Keyboard.release(keyMapKeys[i]);
@@ -320,11 +320,12 @@ start_profile()
       readController(&sampleState);
       Stats::addSample(sampleState);
     }
-    currentState = Stats::buttonState;  //not assigning works unreasonbaly well...
-   
+    currentState = Stats::getButtonState(); 
+    Stats::reset();
+
     if (isHandlingTECInput(currentState) == false) [[likely]] {
       processInput(currentState);
-    } Stats::reset();
+    }   
 end_profile()
 print_profile_active(currentLoopTimestamp - previousTime)
     previousTime = currentLoopTimestamp;
