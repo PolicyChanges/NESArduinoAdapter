@@ -4,12 +4,12 @@
 #include <Keyboard.h>
 
 #define TEC_DEFAULT
-#define PROFILE
+//#define PROFILE
 //#define PROFILE_BUTTONS
 
 namespace Stats 
 {
-  constexpr u8 nSamples = 10;
+  constexpr u8 nSamples = 7;
   static u8 index = 0;
   static u8 samples[nSamples];
   static u8 buttonState = 0;
@@ -38,7 +38,7 @@ namespace Stats
   }
   static void reset() 
   {
-    memcpy(samples, 0, sizeof(samples));
+    //memcpy(samples, 0, sizeof(samples));
     buttonState = 0;
     samplerRunning = true;
   }
@@ -81,7 +81,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 1000; 
+static constexpr unsigned long pollInterval = 2000; 
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -181,8 +181,8 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 //#define wait _delayNanoseconds(6000) // 6μs
-#define wait _delayNanoseconds(1)
-//#define wait delayMicroseconds(12)
+//#define wait _delayNanoseconds(1)
+#define wait delayMicroseconds(6)
 
 // Emulator Keys
 #define KEY_W 0x77
@@ -230,11 +230,8 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-<<<<<<< HEAD
-static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
-=======
+
 static constexpr u32 buttonPressedInterval[8]  = { 16000, 16000, 0, 0, 0, 0, 0, 0 };//{ 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
->>>>>>> c4f28db1f19d43ad26be38c019e0bed5532b6e74
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // User Input Timestamps
