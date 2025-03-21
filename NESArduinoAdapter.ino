@@ -4,7 +4,7 @@
 #include <Keyboard.h>
 
 #define TEC_DEFAULT
-#define PROFILE
+//#define PROFILE
 //#define PROFILE_BUTTONS
 
 namespace Stats 
@@ -181,7 +181,12 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 //#define wait _delayNanoseconds(6000) // 6μs
+#define USE_INTERRUPT 
+#ifdef USE_INTERRUPT
+#define wait delayMicroseconds(12)
+#else
 #define wait _delayNanoseconds(1)
+#endif USE_INTERRUPT
 //#define wait delayMicroseconds(12)
 
 // Emulator Keys
@@ -230,7 +235,7 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-static constexpr u32 buttonPressedInterval[8]  = { 16000, 16000, 0, 0, 0, 0, 0, 0 };//{ 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
+static constexpr u32 buttonPressedInterval[8]  = { 32000, 32000, 16000, 16000, 16000, 16000, 16000, 16000 };//{ 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // User Input Timestamps
@@ -242,7 +247,7 @@ void readController() [[force_inline]];
 
 void setup() {
 #if defined(PROFILE) || defined(PROFILE_BUTTONS)
-  Serial.begin(2000000);
+  Serial.begin(9600);
 #endif
 
   Keyboard.begin();
@@ -253,10 +258,8 @@ void setup() {
     buttonPressedTimestamp[i]  = currentTime;
     buttonReleasedTimestamp[i] = currentTime;
   }
-
-//#define USE_INTERRUPT 
 #ifdef USE_INTERRUPT
-  attachInterrupt(digitalPinToInterrupt(LATCH), readARaw, FALLING);
+  attachInterrupt(digitalPinToInterrupt(LATCH), readControllerRaw, FALLING);
   attachInterrupt(digitalPinToInterrupt(CLOCK), readControllerRaw, FALLING);
 #endif
 }
@@ -268,11 +271,11 @@ void processInput(u8 currentState) {
   for (int i = 0; i < 8; i++) {
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
-        //if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
+       if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
             Keyboard.press(keyMapKeys[i]);
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
             profile_start(i)
-        //}
+        }
       } 
       /*else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
         Keyboard.release(keyMapKeys[i]);
@@ -309,6 +312,43 @@ void readController(u8 *currentState) {
   }
 }
 
+#ifdef USE_INTERRUPT
+volatile unsigned long long buttonEventIDRaw = 0;
+volatile u8 buttonStateRaw = 0;
+
+void readControllerRaw() {
+  buttonStateRaw |= (!digitalRead(DATA) << (buttonEventIDRaw%8));
+}
+ 
+void loop() {
+  const unsigned long currentLoopTimestamp = currentTime;
+  if (currentLoopTimestamp - previousTime >= 4000) {
+    buttonStateRaw = 0;
+    // Read A button
+    latch_high;
+    wait;
+    latch_low;
+    buttonEventIDRaw++;
+    //Read remaining buttons
+    for (int i = 1; i < 8; i++) {
+      clock_high;
+      wait;
+      clock_low;
+      wait;
+      buttonEventIDRaw++;
+    }
+
+    previousTime = currentLoopTimestamp;
+    
+    u8 changedStates = buttonStateRaw ^ previousState;
+    
+    if (changedStates && isHandlingTECInput(buttonStateRaw) == false) 
+      processInput(buttonStateRaw);   
+    
+    previousState = buttonStateRaw;
+  }
+}
+#else
 void loop() {
 start_profile()
   u8 currentState = 0;
@@ -332,6 +372,7 @@ print_profile_active(currentLoopTimestamp - previousTime)
     previousState = currentState;
   }
 }
+#endif USE_INTERRUPT
 
 #ifdef TEC_DEFAULT
 bool isHandlingTECInput(u8 state) {
