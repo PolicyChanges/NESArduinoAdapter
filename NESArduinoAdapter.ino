@@ -9,7 +9,7 @@
 
 namespace Stats 
 {
-  constexpr u8 nSamples = 10;
+  constexpr u8 nSamples = 7;
   static u8 index = 0;
   static u8 samples[nSamples];
   static u8 buttonState = 0;
@@ -38,7 +38,7 @@ namespace Stats
   }
   static void reset() 
   {
-    memcpy(samples, 0, sizeof(samples));
+    //memcpy(samples, 0, sizeof(samples));
     buttonState = 0;
     samplerRunning = true;
   }
@@ -181,6 +181,7 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 //#define wait _delayNanoseconds(6000) // 6μs
+
 #define USE_INTERRUPT 
 #ifdef USE_INTERRUPT
 #define wait delayMicroseconds(12)
@@ -188,6 +189,7 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define wait _delayNanoseconds(1)
 #endif USE_INTERRUPT
 //#define wait delayMicroseconds(12)
+
 
 // Emulator Keys
 #define KEY_W 0x77
@@ -235,7 +237,7 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-static constexpr u32 buttonPressedInterval[8]  = { 32000, 32000, 16000, 16000, 16000, 16000, 16000, 16000 };//{ 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
+static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
 static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // User Input Timestamps
