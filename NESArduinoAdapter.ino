@@ -5,7 +5,7 @@
 
 #define TEC_DEFAULT
 //#define PROFILE
-//#define PROFILE_BUTTONS
+#define PROFILE_BUTTONS
 
 namespace Stats 
 {
@@ -81,7 +81,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 2000; 
+static constexpr unsigned long pollInterval = 1000; 
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -136,7 +136,7 @@ static u32 nBounces[8]             = {0,0,0,0,0,0,0,0};
 #define mod_16(x) ((unsigned long)round(profile_delta(x))%16)
 #define button_event_as_string(x) String(buttonEventID[x]-1)
 
-#define print_bounce(x) if(profile_delta(x) <= (double)32){                                                          \
+#define print_bounce(x) if(profile_delta(x) <= (double)36){                                                          \
                         Serial.print("*****Bounce on EventID: " + button_event_as_string(x) +                            \
                         " Interval: "); Serial.print(profile_delta(x), 3);                                          \ 
                         Serial.println(String("ms") +                                                               \
@@ -181,7 +181,6 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #define _delayNanoseconds(__ns)     __builtin_avr_delay_cycles( (double)(F_CPU)*((double)__ns)/1.0e9 )
 
 //#define wait _delayNanoseconds(6000) // 6μs
-
 #define USE_INTERRUPT 
 #ifdef USE_INTERRUPT
 #define wait delayMicroseconds(12)
@@ -237,12 +236,13 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-static constexpr u32 buttonPressedInterval[8]  = { 31992, 31992, 31992, 31992, 31992, 31992, 31992, 31992 };
-static constexpr u32 buttonReleasedInterval[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static constexpr u32 buttonPressedInterval[8]  = { 54000, 54000, 54000, 54000, 54000, 54000, 54000, 54000 };
+static constexpr u32 buttonReleasedInterval[8] = { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 };
 
 // User Input Timestamps
 static unsigned long long buttonPressedTimestamp[8];
 static unsigned long long buttonReleasedTimestamp[8];
+static unsigned long long previousChangedStateTimestamp[8];
 
 
 void readController() [[force_inline]];
@@ -259,6 +259,7 @@ void setup() {
   for (int i = 0; i < 8; i++) {
     buttonPressedTimestamp[i]  = currentTime;
     buttonReleasedTimestamp[i] = currentTime;
+    previousChangedStateTimestamp[i] = currentTime;
   }
 #ifdef USE_INTERRUPT
   attachInterrupt(digitalPinToInterrupt(LATCH), readControllerRaw, FALLING);
@@ -268,33 +269,41 @@ void setup() {
 
 void processInput(u8 currentState) {
   const unsigned long processInputCurrentTimestamp = currentTime;
-  const u8 changedStates = currentState ^ previousState;
+  u8 changedStates = currentState ^ previousState;
 
   for (int i = 0; i < 8; i++) {
+    if(processInputCurrentTimestamp - previousChangedStateTimestamp[i] < 54000) {
+      if(((currentState >> i) & 0b00000001)){
+        changedStates &= ~(1 << i);
+        previousChangedStateTimestamp[i] = processInputCurrentTimestamp;
+        Serial.println("button cancelled");
+      }
+    }
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
        if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
             Keyboard.press(keyMapKeys[i]);
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
+            previousChangedStateTimestamp[i] = processInputCurrentTimestamp;
             profile_start(i)
         }
       } 
-      /*else if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
+      else { // if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
+        //Serial.println("Bounce with interval " + String((double)(micros() - buttonPressedTimestamp[i])));
+        profile_stop(i)        
+        print_bounce(i) 
         Keyboard.release(keyMapKeys[i]);
         buttonReleasedTimestamp[i] = processInputCurrentTimestamp;
-        isButtonPressed[i] = false;
+        profile_print(i)
+        reset_button_profile(i)
+      }
+      /*else {
+        Keyboard.release(keyMapKeys[i]);
         profile_stop(i)        
         print_bounce(i) 
         profile_print(i)
         reset_button_profile(i)
       }*/
-      else {
-        Keyboard.release(keyMapKeys[i]);
-        profile_stop(i)        
-        print_bounce(i) 
-        profile_print(i)
-        reset_button_profile(i)
-      }
     }
   }
 }
