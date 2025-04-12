@@ -7,56 +7,6 @@
 //#define PROFILE
 #define PROFILE_BUTTONS
 
-namespace Stats 
-{
-  constexpr u8 nSamples = 7;
-  static u8 index = 0;
-  static u8 samples[nSamples];
-  static u8 buttonState = 0;
-  static bool samplerRunning = true;
-
-  static bool isSampling() 
-  {
-    return samplerRunning;
-  }
-  static u8 getButtonState()
-  {
-    return buttonState;
-  }
-  static u8 averageSamples() 
-  {
-    float sum[8];
-    buttonState = 0;
-    memcpy(sum, 0,sizeof(sum));
-    for(u8 i = 0; i < 8; i++){
-      for(u8 j = 0; j < nSamples; j++){
-        sum[i] += (float)((samples[j] >> i) & 0b00000001);
-      }
-      buttonState |= ((u8)roundf(sum[i]/(float)nSamples) << i);
-    }      
-    samplerRunning = false;
-  }
-  static void reset() 
-  {
-    //memcpy(samples, 0, sizeof(samples));
-    buttonState = 0;
-    samplerRunning = true;
-  }
-  static u8 increment() 
-  {
-    index++;
-    if(index >= nSamples) {
-      index = 0;
-      averageSamples();
-    }
-    return index;
-  }
-  static void addSample(u8 state)
-  {
-    samples[index] = state;
-    increment();
-  }
-};
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH, DATA
 static constexpr u8 inputPinsPort1[] = { 2, 3, 4 };  //change these as necessary
@@ -82,6 +32,11 @@ static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
 static constexpr unsigned long pollInterval = 1000; 
+static constexpr unsigned long debounceInterval = 54000;
+
+constexpr unsigned long numberOfFramesDebounce = 3; 
+constexpr unsigned long frameInteveralMicros = 16000;
+constexpr unsigned long debounceIntervalMicros = numberOfFramesDebounce * frameInteveralMicros;
 
 #define NES_A       B00000001
 #define NES_B       B00000010
@@ -92,7 +47,7 @@ static constexpr unsigned long pollInterval = 1000;
 #define NES_LEFT    B01000000
 #define NES_RIGHT   B10000000
 
-
+static constexpr char* nameIdx[8] = {"A","B","Select","Start","Up","Down","Left","Right"};
 
 #ifdef PROFILE
   static unsigned long total_delta = 0;
@@ -121,8 +76,6 @@ static constexpr unsigned long pollInterval = 1000;
 
 // Button states (used for profiling)
 static bool isButtonPressed[8] = {0,0,0,0,0,0,0,0};
-
-static constexpr char* nameIdx[8] = {"A","B","Select","Start","Up","Down","Left","Right"};
 
 static u32 previousButtonPrint = currentTime;
 static u32 buttonStartTimestamp[8] = {0,0,0,0,0,0,0,0};
@@ -189,7 +142,6 @@ static u32 buttonEventID[8]        = {0,0,0,0,0,0,0,0};
 #endif USE_INTERRUPT
 //#define wait delayMicroseconds(12)
 
-
 // Emulator Keys
 #define KEY_W 0x77
 #define KEY_A 0x97
@@ -236,7 +188,7 @@ static constexpr u8 keyMapKeys[8] {
 #endif TEC_DEFAULT
 
 // Debounce Interverals Per Button
-static constexpr u32 buttonPressedInterval[8]  = { 54000, 54000, 54000, 54000, 54000, 54000, 54000, 54000 };
+static constexpr u32 buttonPressedInterval[8]  = { 130000, 130000, 16000, 16000, 16000, 16000, 16000, 16000 };
 static constexpr u32 buttonReleasedInterval[8] = { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 };
 
 // User Input Timestamps
@@ -267,18 +219,15 @@ void setup() {
 #endif
 }
 
+#define MAX_SAMPLES 480
+volatile int buttonStateVoltage[MAX_SAMPLES];
+
 void processInput(u8 currentState) {
   const unsigned long processInputCurrentTimestamp = currentTime;
   u8 changedStates = currentState ^ previousState;
 
   for (int i = 0; i < 8; i++) {
-    if(processInputCurrentTimestamp - previousChangedStateTimestamp[i] < 54000) {
-      if(((currentState >> i) & 0b00000001)){
-        changedStates &= ~(1 << i);
-        previousChangedStateTimestamp[i] = processInputCurrentTimestamp;
-        Serial.println("button cancelled");
-      }
-    }
+    const unsigned long delta = processInputCurrentTimestamp - previousChangedStateTimestamp[i];
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
        if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
@@ -297,43 +246,24 @@ void processInput(u8 currentState) {
         profile_print(i)
         reset_button_profile(i)
       }
-      /*else {
-        Keyboard.release(keyMapKeys[i]);
-        profile_stop(i)        
-        print_bounce(i) 
-        profile_print(i)
-        reset_button_profile(i)
-      }*/
     }
   }
 }
 
-void readController(u8 *currentState) {
-  latch_low;
-  clock_low;
-  latch_high;
-  wait;
-  latch_low;
-  for (int i = 0; i < 8; i++) {
-    *currentState |= (!digitalRead(DATA) << i);
-    clock_high;
-    wait;
-    clock_low;
-    wait;
-  }
-}
 
-#ifdef USE_INTERRUPT
 volatile unsigned long long buttonEventIDRaw = 0;
 volatile u8 buttonStateRaw = 0;
 
+
 void readControllerRaw() {
-  buttonStateRaw |= (!digitalRead(DATA) << (buttonEventIDRaw%8));
+  buttonStateRaw |= (!digitalRead(DATA) << (buttonEventIDRaw%8));      
 }
- 
+
 void loop() {
   const unsigned long currentLoopTimestamp = currentTime;
-  if (currentLoopTimestamp - previousTime >= 4000) {
+
+
+  if (currentLoopTimestamp - previousTime >= pollInterval) {
     buttonStateRaw = 0;
     // Read A button
     latch_high;
@@ -359,31 +289,6 @@ void loop() {
     previousState = buttonStateRaw;
   }
 }
-#else
-void loop() {
-start_profile()
-  u8 currentState = 0;
-  const unsigned long currentLoopTimestamp = currentTime;
-  if (currentLoopTimestamp - previousTime >= pollInterval)
-  {
-    while(Stats::isSampling()) {
-      u8 sampleState = 0;
-      readController(&sampleState);
-      Stats::addSample(sampleState);
-    }
-    currentState = Stats::getButtonState(); 
-    Stats::reset();
-
-    if (isHandlingTECInput(currentState) == false) [[likely]] {
-      processInput(currentState);
-    }   
-end_profile()
-print_profile_active(currentLoopTimestamp - previousTime)
-    previousTime = currentLoopTimestamp;
-    previousState = currentState;
-  }
-}
-#endif USE_INTERRUPT
 
 #ifdef TEC_DEFAULT
 bool isHandlingTECInput(u8 state) {
