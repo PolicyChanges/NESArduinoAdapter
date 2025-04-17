@@ -4,8 +4,8 @@
 #include <Keyboard.h>
 
 #define TEC_DEFAULT
-//#define PROFILE
-#define PROFILE_BUTTONS
+#define PROFILE
+//#define PROFILE_BUTTONS
 
 
 //Connector (Connect also GND and 5V):  CLOCK, LATCH, DATA
@@ -31,7 +31,7 @@ static u8 previousState = 0;
 static unsigned long previousTime = currentTime;
 // pollInterval is the interval between reading controller. loop() runs at 16MHz
 // so set to 500-4000 to minimize bit-bashing. 12000 to eliminate bit-bashing (in microseconds)
-static constexpr unsigned long pollInterval = 1000; 
+static constexpr unsigned long pollInterval = 800; 
 static constexpr unsigned long debounceInterval = 54000;
 
 constexpr unsigned long numberOfFramesDebounce = 3; 
@@ -191,6 +191,10 @@ static constexpr u8 keyMapKeys[8] {
 static constexpr u32 buttonPressedInterval[8]  = { 130000, 130000, 16000, 16000, 16000, 16000, 16000, 16000 };
 static constexpr u32 buttonReleasedInterval[8] = { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 };
 
+static constexpr u32 initialPressedDebounceInterval[8]  = { 130000, 130000, 16000, 16000, 16000, 16000, 16000, 16000 };
+static constexpr u32 subsequentPressedDebounceInterval[8]  = { 64000, 64000, 64000, 64000, 64000, 64000, 64000, 64000 };
+static u32 numberOfKeyPressedBounces[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
 // User Input Timestamps
 static unsigned long long buttonPressedTimestamp[8];
 static unsigned long long buttonReleasedTimestamp[8];
@@ -222,19 +226,29 @@ void setup() {
 #define MAX_SAMPLES 480
 volatile int buttonStateVoltage[MAX_SAMPLES];
 
+volatile unsigned long long buttonEventIDRaw = 0;
+volatile u8 buttonStateRaw = 0;
+
 void processInput(u8 currentState) {
   const unsigned long processInputCurrentTimestamp = currentTime;
+
   u8 changedStates = currentState ^ previousState;
 
   for (int i = 0; i < 8; i++) {
-    const unsigned long delta = processInputCurrentTimestamp - previousChangedStateTimestamp[i];
+    unsigned long buttonPressedDelta = processInputCurrentTimestamp - buttonPressedTimestamp[i];
     if ((changedStates >> i) & 0b00000001) {
       if (((currentState >> i) & 0b00000001)) {
-       if (processInputCurrentTimestamp - buttonPressedTimestamp[i] > buttonPressedInterval[i]) {
+       if ((numberOfKeyPressedBounces[i] == 0 && buttonPressedDelta < initialPressedDebounceInterval[i]) 
+        || (numberOfKeyPressedBounces[i] != 0 && buttonPressedDelta < subsequentPressedDebounceInterval[i])) {
+          numberOfKeyPressedBounces[i]++;
+          Serial.println("Button bounce " + String(nameIdx[i]) + " " + String(numberOfKeyPressedBounces[i]) + ((numberOfKeyPressedBounces[i]==1) ? " time." : " times.") + " Resetting timestamp. Delta: " + String(buttonPressedDelta));
+          buttonPressedTimestamp[i] = processInputCurrentTimestamp;
+        } else {
             Keyboard.press(keyMapKeys[i]);
             buttonPressedTimestamp[i] = processInputCurrentTimestamp;
-            previousChangedStateTimestamp[i] = processInputCurrentTimestamp;
+            //previousChangedStateTimestamp[i] = processInputCurrentTimestamp;
             profile_start(i)
+            numberOfKeyPressedBounces[i] = 0;
         }
       } 
       else { // if (processInputCurrentTimestamp - buttonReleasedTimestamp[i] > buttonReleasedInterval[i]) {
@@ -250,11 +264,6 @@ void processInput(u8 currentState) {
   }
 }
 
-
-volatile unsigned long long buttonEventIDRaw = 0;
-volatile u8 buttonStateRaw = 0;
-
-
 void readControllerRaw() {
   buttonStateRaw |= (!digitalRead(DATA) << (buttonEventIDRaw%8));      
 }
@@ -262,8 +271,8 @@ void readControllerRaw() {
 void loop() {
   const unsigned long currentLoopTimestamp = currentTime;
 
-
   if (currentLoopTimestamp - previousTime >= pollInterval) {
+    unsigned long t1 = currentTime;
     buttonStateRaw = 0;
     // Read A button
     latch_high;
@@ -278,7 +287,7 @@ void loop() {
       wait;
       buttonEventIDRaw++;
     }
-
+    
     previousTime = currentLoopTimestamp;
     
     u8 changedStates = buttonStateRaw ^ previousState;
@@ -287,7 +296,9 @@ void loop() {
       processInput(buttonStateRaw);   
     
     previousState = buttonStateRaw;
+    //Serial.println("function duration: "+String(currentTime-t1));
   }
+
 }
 
 #ifdef TEC_DEFAULT
